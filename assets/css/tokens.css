@@ -1,0 +1,66 @@
+/* Rinova Learn design tokens (palette from the Rinova logo) */
+:root {
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* brand */
+  --brand-900: #072A6B;
+  --brand-700: #0B3C95;   /* primary (logo deep blue) */
+  --brand-600: #0A5FC4;   /* interactive blue */
+  --brand-500: #2B7BE0;
+  --brand-100: #E6F0FC;
+  --brand-50:  #F3F8FE;
+  --green-600: #2F8A27;
+  --green-500: #3A9A2F;   /* logo green */
+  --green-100: #E8F5E6;
+  --orange-500: #F59E0B;  /* logo orange: highlights only */
+  --orange-100: #FEF3DC;
+  --red-600: #D92D20;
+  --red-100: #FDECEA;
+
+  /* neutrals */
+  --ink:      #0B0B0F;
+  --gray-900: #17181C;
+  --gray-700: #3F424B;
+  --gray-500: #6B7280;
+  --gray-400: #9AA0AB;
+  --gray-300: #D4D7DD;
+  --gray-200: #E7E9ED;
+  --gray-100: #F1F2F5;
+  --gray-50:  #F8F9FB;
+  --white:    #FFFFFF;
+
+  /* semantic */
+  --bg: var(--gray-50);
+  --surface: var(--white);
+  --text: var(--gray-900);
+  --text-muted: var(--gray-500);
+  --border: var(--gray-200);
+  --primary: var(--brand-700);
+  --primary-hover: var(--brand-900);
+  --focus: rgba(10, 95, 196, .35);
+
+  /* type scale (1.2) */
+  --fs-xs: .75rem; --fs-sm: .8125rem; --fs-base: .9375rem; --fs-md: 1.0625rem;
+  --fs-lg: 1.25rem; --fs-xl: 1.5rem; --fs-2xl: 1.875rem; --fs-3xl: 2.5rem; --fs-4xl: 3.25rem;
+
+  /* spacing (4px base) */
+  --sp-1: .25rem; --sp-2: .5rem; --sp-3: .75rem; --sp-4: 1rem; --sp-5: 1.5rem;
+  --sp-6: 2rem; --sp-7: 3rem; --sp-8: 4rem; --sp-9: 6rem;
+
+  --radius-sm: 8px; --radius: 12px; --radius-lg: 16px; --radius-pill: 999px;
+  --shadow-xs: 0 1px 2px rgba(11,11,15,.05);
+  --shadow-sm: 0 1px 3px rgba(11,11,15,.07), 0 1px 2px rgba(11,11,15,.04);
+  --shadow-md: 0 6px 18px rgba(11,11,15,.08), 0 2px 6px rgba(11,11,15,.04);
+  --shadow-lg: 0 18px 48px rgba(11,11,15,.14);
+
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --t-fast: 140ms; --t: 200ms; --t-slow: 320ms;
+
+  --sidebar-w: 248px;
+  --topbar-h: 60px;
+  --content-max: 1200px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 1ms; --t: 1ms; --t-slow: 1ms; }
+}

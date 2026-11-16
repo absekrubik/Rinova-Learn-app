@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src https://*.supabase.co https://www.youtube-nocookie.com https://player.vimeo.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rinova Learn</title>
+  <meta name="description" content="Rinova Learn: a modern online learning platform.">
+  <link rel="icon" type="image/png" href="assets/img/favicon.png">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <style>
+    .hero { text-align: center; padding: var(--sp-9) 0 var(--sp-7); }
+    .hero img { height: 84px; width: auto; margin: 0 auto var(--sp-6); }
+    .hero h1 { font-size: clamp(2rem, 5vw, var(--fs-4xl)); letter-spacing: -0.035em; max-width: 14ch; margin: 0 auto var(--sp-4); }
+    .hero p { font-size: var(--fs-md); color: var(--text-muted); max-width: 52ch; margin: 0 auto var(--sp-6); }
+    .features { margin-top: var(--sp-7); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-300); display: inline-block; }
+    .dot.ok { background: var(--green-500); } .dot.warn { background: var(--orange-500); }
+  </style>
+</head>
+<body>
+<noscript><p style="font-family:system-ui,sans-serif;max-width:40rem;margin:3rem auto;padding:0 1rem">Rinova Learn needs JavaScript to run. Please turn it on in your browser and reload this page.</p></noscript>
+  <main class="center-page" style="align-items:start">
+    <div class="content fade-up" style="max-width:900px">
+      <section class="hero">
+        <img src="assets/img/logo-full.png" alt="Rinova Learn">
+        <h1>Learn, teach and grow in one place.</h1>
+        <p>Courses, live classes, assignments and quizzes with a calm, focused interface for students, teachers and administrators.</p>
+        <div class="row" style="justify-content:center">
+          <a class="btn btn-primary btn-lg" id="signin" href="auth/login.html">Sign in</a>
+          <a class="btn btn-secondary btn-lg" href="design-system.html">Design system</a>
+        </div>
+      </section>
+
+      <section class="grid grid-3 features">
+        <div class="card"><h4>For students</h4><p class="text-muted text-sm" style="margin:0">Watch lessons, join live classes, submit work and track your progress.</p></div>
+        <div class="card"><h4>For teachers</h4><p class="text-muted text-sm" style="margin:0">Build courses, take attendance, grade assignments and run quizzes.</p></div>
+        <div class="card"><h4>For administrators</h4><p class="text-muted text-sm" style="margin:0">Manage users, courses and enrollments with a full overview.</p></div>
+      </section>
+
+      <p class="text-center text-sm text-muted" style="margin-top:var(--sp-7)">
+        <span class="dot" id="dot"></span> <span id="status">Checking setup…</span>
+      </p>
+    </div>
+  </main>
+  <script type="module" src="js/pages/index.js"></script>
+</body>
+</html>

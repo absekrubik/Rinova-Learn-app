@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" width="420" height="96" role="img" aria-label="Rinova Learn">
+  <rect width="96" height="96" rx="24" fill="#0B0B0F"/>
+  <path d="M33 70V27h19a14.5 14.5 0 0 1 0 29H33M51 56l17 14" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="70" cy="27" r="5" fill="#6366F1"/>
+  <text x="120" y="62" font-family="Inter, -apple-system, 'SF Pro Display', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="44" font-weight="650" letter-spacing="-1.2" fill="#0B0B0F">Rinova<tspan font-weight="400" fill="#6B7280" dx="10">Learn</tspan></text>
+</svg>

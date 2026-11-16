@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page not found · Rinova Learn</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="/assets/img/favicon.png">
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #101828; background: #f8f9fb; }
+    main { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center; }
+    h1 { font-size: 2rem; margin: 0 0 8px; }
+    p { color: #475467; margin: 0 0 20px; }
+    a { display: inline-block; background: #0B3C95; color: #fff; padding: 12px 22px; border-radius: 10px; text-decoration: none; font-weight: 600; }
+    a:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+<main><div><h1>Page not found</h1><p>The page you are looking for does not exist or has moved.</p><a id="home" href="./">Go to Rinova Learn</a></div></main>
+<script>
+  // GitHub Pages serves this page for any missing URL. Link home using the repository folder when the site is published under one.
+  (function(){var seg=location.pathname.split("/")[1];var home=document.getElementById("home");if(location.hostname.endsWith(".github.io")&&seg){home.href="/"+seg+"/";}else{home.href="/";}})();
+</script>
+</body>
+</html>

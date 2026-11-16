@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src https://*.supabase.co https://www.youtube-nocookie.com https://player.vimeo.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome back · Rinova Learn</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="../assets/img/favicon.png">
+  <link rel="stylesheet" href="../assets/css/tokens.css">
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/layout.css">
+</head>
+<body>
+<noscript><p style="font-family:system-ui,sans-serif;max-width:40rem;margin:3rem auto;padding:0 1rem">Rinova Learn needs JavaScript to run. Please turn it on in your browser and reload this page.</p></noscript>
+<main class="center-page">
+  <div class="auth-card card fade-up" style="padding:var(--sp-6)">
+    <a href="../index.html"><img class="logo" src="../assets/img/logo-full.png" alt="Rinova Learn"></a>
+    <h1 class="text-center" style="font-size:var(--fs-xl)">Welcome back</h1>
+    <p class="text-center text-muted" style="margin-bottom:var(--sp-5)">Sign in to continue learning.</p>
+    <div id="notice"></div>
+    <form id="form" novalidate>
+      <div class="field"><label for="email">Email</label><input class="input" id="email" name="email" type="email" autocomplete="email" required autofocus></div>
+      <div class="field"><label for="password">Password</label><input class="input" id="password" name="password" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-primary btn-block btn-lg" type="submit">Sign in</button>
+    </form>
+    <p class="text-center text-sm" style="margin:var(--sp-4) 0 0"><a href="forgot-password.html">Forgot your password?</a></p>
+    <hr><p class="text-center text-sm text-muted" style="margin:0">New student? <a href="register.html">Create an account</a><br>Teachers receive their account from an administrator.</p>
+  </div>
+</main>
+<script type="module" src="../js/pages/login.js"></script>
+</body>
+</html>

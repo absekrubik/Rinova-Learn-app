@@ -1,0 +1,5 @@
+.DS_Store
+node_modules/
+.env
+*.local
+# NEVER commit service_role keys or database passwords
