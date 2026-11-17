@@ -35,3 +35,7 @@
 ## Joined status (migration 019)
 - `live_joins` has no direct write access. Joins are recorded only by `record_join()`, which checks the class window (15 minutes before the start to 1 hour after the end) and that the caller is an enrolled student, a teacher of the course, or an admin.
 - A person can read only their own join row. Staff read the list through `live_joined()`, which returns names and times, never emails.
+
+## Presence (migration 020)
+- `live_sessions` has no direct write access. Visits are written only by `record_join`, `live_heartbeat` and `record_leave`; people read only their own visits, and staff read names and times through `live_joined()`.
+- To notice a closed meeting tab, the page keeps a handle on the window it opened, but only for `meet.jit.si` and `meet.google.com`. Every other meeting link still opens with `noopener`.

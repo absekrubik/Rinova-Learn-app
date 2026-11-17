@@ -29,6 +29,7 @@ Dashboard > **SQL Editor** > New query > paste each file and press **Run**:
 17. `migrations/017_phase16_lesson_questions.sql` (questions and replies under a lesson, optionally tied to a video time, with teacher notifications)
 18. `migrations/018_phase17_live_pulse.sql` (anonymous "I'm lost" pulse and live polls during a class)
 19. `migrations/019_phase18_live_joins.sql` (records who pressed Join on a live class, so the page can show "Joined" and teachers can see who is in)
+20. `migrations/020_phase19_live_presence.sql` (records each visit with a leave time, so teachers see who is in, who left and who rejoined)
 
 ## 3. Authentication settings
 Dashboard > **Authentication**:

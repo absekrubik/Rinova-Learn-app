@@ -7,7 +7,7 @@ Tick every box on the real site (not a local copy) before giving students access
 - [ ] (Optional, needs a throw-away local Postgres) `supabase/tests/run_tests.sh` ends with `0 failed`
 
 ## Setup
-- [ ] Migrations 001 to 019 ran with no errors
+- [ ] Migrations 001 to 020 ran with no errors
 - [ ] `js/config.js` has your Project URL and publishable key (no secret key anywhere)
 - [ ] Auth: Site URL and Redirect URLs match your Pages address, "Confirm email" is on
 - [ ] `create-user` function is deployed and `ALLOWED_ORIGIN` is set
@@ -78,3 +78,10 @@ The database tests prove a locked lesson's row and attached files are hidden. Vi
 - [ ] Student closes the meeting tab, returns to the class page and presses Rejoin: the meeting opens again
 - [ ] Teacher and admin see "Who has joined" with names, times and "N of M students"
 - [ ] A student cannot see that list, and pressing Join outside the class window records nothing
+
+## Presence: in, left, rejoined (migration 020)
+- [ ] Student joins, then closes the Jitsi tab: within a couple of seconds the class page says "You left the class" with the leave time
+- [ ] Student presses Rejoin: it opens again as a second visit, and the teacher list shows both visits
+- [ ] Student presses "I've left the class": the leave is recorded
+- [ ] Student closes the whole browser while in the class: after about 2 minutes the teacher list shows them as Left
+- [ ] On a phone using the Jitsi app: the student presses "I've left the class" when finished (the app cannot be detected)

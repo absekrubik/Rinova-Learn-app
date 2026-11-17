@@ -22,6 +22,7 @@ create policy joins_select on public.live_joins for select to authenticated usin
 revoke all on public.live_joins from anon, authenticated;
 grant select on public.live_joins to authenticated;       -- no direct insert/update/delete: use record_join()
 
+drop function if exists public.record_join(uuid, text);      -- so re-running the whole set in order works (020 recreates it)
 create or replace function public.record_join(p_class uuid) returns table(first_joined_at timestamptz, last_joined_at timestamptz, join_count int)
 language plpgsql security definer set search_path = public as $$
 declare cc uuid; uid uuid := auth.uid();
@@ -40,6 +41,7 @@ revoke execute on function public.record_join(uuid) from public, anon;
 grant execute on function public.record_join(uuid) to authenticated;
 
 -- Who has joined: staff only. Names and times, never emails.
+drop function if exists public.live_joined(uuid);
 create or replace function public.live_joined(p_class uuid) returns table(user_id uuid, full_name text, is_staff boolean, first_joined_at timestamptz, last_joined_at timestamptz, join_count int, enrolled int)
 language plpgsql stable security definer set search_path = public as $$
 declare cc uuid;

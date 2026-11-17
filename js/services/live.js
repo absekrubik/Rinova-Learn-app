@@ -83,22 +83,37 @@ export async function deleteClass(id) {
 export const toLocalInput = (iso) => { const d = new Date(iso); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
 export const fromLocalInput = (v) => { const d = new Date(v); return Number.isNaN(d.getTime()) ? null : d.toISOString(); };
 
-// ---- "Joined" status (migration 019) ----
-/** Records that the signed-in user pressed Join (only works while the class is open). Returns { first_joined_at, last_joined_at, join_count }. */
-export async function recordJoin(classId) {
-  const { data, error } = await requireClient().rpc('record_join', { p_class: classId });
+// ---- Joined / left status (migrations 019 and 020) ----
+/** Presence is judged by a heartbeat; no heartbeat for 2 minutes counts as having left. */
+export const HEARTBEAT_MS = 30000;
+/** Hosts whose pages we can safely open in a window we keep a handle on, so we notice when it is closed. Anything else opens with noopener. */
+export const TRACKED_HOSTS = ['meet.jit.si', 'meet.google.com'];
+export const isTrackedHost = (u) => { try { const x = new URL(u); return x.protocol === 'https:' && TRACKED_HOSTS.includes(x.hostname); } catch { return false; } };
+
+/** Records that the signed-in user pressed Join (only works while the class is open). via is 'tab' or 'app'. */
+export async function recordJoin(classId, via = 'tab') {
+  const { data, error } = await requireClient().rpc('record_join', { p_class: classId, p_via: via === 'app' ? 'app' : 'tab' });
   if (error) throw error;
   return Array.isArray(data) ? data[0] ?? null : data;
 }
-/** The signed-in user's own join record for a class, or null. */
-export async function myJoin(classId) {
-  const { data, error } = await requireClient().from('live_joins').select('first_joined_at,last_joined_at,join_count').eq('live_class_id', classId).maybeSingle();
+/** "I am still here", sent while the class page is open. */
+export async function heartbeat(classId) { const { error } = await requireClient().rpc('live_heartbeat', { p_class: classId }); if (error) throw error; }
+/** The meeting was closed, or the person pressed "I've left". */
+export async function recordLeave(classId) { const { error } = await requireClient().rpc('record_leave', { p_class: classId }); if (error) throw error; }
+/** The signed-in user's own status: { in_class, first_joined_at, join_count, visit_joined_at, left_at, via }, or null if they never joined. */
+export async function myStatus(classId) {
+  const { data, error } = await requireClient().rpc('my_live_status', { p_class: classId });
   if (error) throw error;
-  return data ?? null;
+  return (Array.isArray(data) ? data[0] : data) ?? null;
 }
-/** Staff only: everyone who has joined, oldest first, with the number of enrolled students. */
+/** Staff only: everyone who has joined, with whether they are in now, each visit and the total time. */
 export async function joinedList(classId) {
   const { data, error } = await requireClient().rpc('live_joined', { p_class: classId });
   if (error) throw error;
   return data ?? [];
+}
+/** "1 h 5 min", "12 min", "under a minute". */
+export function fmtDuration(seconds) {
+  const m = Math.round((seconds || 0) / 60); if (m < 1) return 'under a minute';
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`;
 }

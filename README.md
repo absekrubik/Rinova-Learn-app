@@ -19,6 +19,7 @@ Online Learning Management System. HTML5, CSS3, vanilla JavaScript (ES modules),
 - Phase 16 (timestamped video questions with a teacher queue): done
 - Phase 17 (live class pulse and polls, and the smart study plan): done
 - Phase 18 (live classes show "Joined", rejoin, and a who-has-joined list for staff): done
+- Phase 19 (live class presence: who is in, who left, each visit and total time): done
 - Global search (top bar on every page, press / or Ctrl+K): done
 - Calendar (live classes, deadlines and quiz windows for every role, with an .ics download): done
 - Needs attention (early-warning list for teachers and admins, with a friendly nudge): done
@@ -27,7 +28,7 @@ Online Learning Management System. HTML5, CSS3, vanilla JavaScript (ES modules),
 All planned phases are complete.
 
 ## Get started
-1. Follow `supabase/README.md` (create project, run migrations 001-019, create first admin).
+1. Follow `supabase/README.md` (create project, run migrations 001-020, create first admin).
 2. Put your Project URL and **anon** key in `js/config.js`. Never use the service_role key.
 3. Preview locally with any static server (for example the VS Code "Live Server" extension), open `index.html`; `design-system.html` shows every component.
 4. Deploy: see `docs/DEPLOY.md`. Before opening to students, work through `docs/RELEASE_CHECKLIST.md` and run `python tools/audit.py`.

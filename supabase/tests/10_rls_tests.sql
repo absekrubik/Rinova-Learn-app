@@ -1748,5 +1748,71 @@ begin
   perform tests.check('P18: deleting a class deletes its joins', (select count(*) from live_joins where live_class_id = lc) = 0);
 end $t16$;
 
+-- ---------------------------------------------------------------------
+-- Phase 19: presence (who is in, who left, visits)
+-- ---------------------------------------------------------------------
+do $t17$
+declare
+  ta uuid := '00000000-0000-0000-0000-0000000019a1'; ad uuid := '00000000-0000-0000-0000-0000000019a0'; tb uuid := '00000000-0000-0000-0000-0000000019a2';
+  sa uuid := '00000000-0000-0000-0000-0000000019b1'; sb uuid := '00000000-0000-0000-0000-0000000019b2';
+  cid uuid; lc uuid; r record; j jsonb;
+begin
+  insert into auth.users(id, email, raw_user_meta_data, raw_app_meta_data) values
+    (ta,'p19ta@x.test','{"full_name":"P19 TA"}','{"role":"teacher"}'), (tb,'p19tb@x.test','{"full_name":"P19 TB"}','{"role":"teacher"}'), (ad,'p19ad@x.test','{"full_name":"P19 Admin"}','{"role":"admin"}'),
+    (sa,'p19sa@x.test','{"full_name":"P19 SA"}','{}'), (sb,'p19sb@x.test','{"full_name":"P19 SB"}','{}');
+  insert into courses(title, created_by, status) values ('P19 Course', ta, 'published') returning id into cid;
+  insert into enrollments(course_id, student_id) values (cid, sa), (cid, sb);
+  insert into live_classes(course_id,title,starts_at,ends_at) values (cid,'On now', now() - interval '10 minutes', now() + interval '50 minutes') returning id into lc;
+
+  perform tests.as_user(sa);
+  perform record_join(lc);
+  select * into r from my_live_status(lc);
+  perform tests.check('P19: after Join the student is "in the class" with one visit', r.in_class and r.join_count = 1 and r.left_at is null and r.visit_joined_at is not null);
+  perform live_heartbeat(lc);
+  perform tests.check('P19: a heartbeat keeps the visit alive', (select in_class from my_live_status(lc)));
+  perform record_leave(lc);
+  select * into r from my_live_status(lc);
+  perform tests.check('P19: leaving records the time and the student is no longer in the class', not r.in_class and r.left_at is not null and r.join_count = 1);
+  perform record_join(lc);
+  select * into r from my_live_status(lc);
+  perform tests.check('P19: joining again starts a new visit and counts the rejoin', r.in_class and r.join_count = 2 and r.left_at is null);
+  perform tests.check('P19: two visits are stored for the student, one closed and one open', (select count(*) from live_sessions where live_class_id = lc) = 2 and (select count(*) from live_sessions where live_class_id = lc and left_at is null) = 1);
+  perform record_join(lc);
+  perform tests.check('P19: pressing Join while a visit is open closes that visit first (never two open at once)', (select count(*) from live_sessions where live_class_id = lc and left_at is null) = 1 and (select count(*) from live_sessions where live_class_id = lc) = 3);
+  perform tests.check('SECURITY: nobody writes the sessions table directly', tests.try(format($$insert into live_sessions(live_class_id, user_id, course_id) values (%L, %L, %L)$$, lc, sa, cid)) = -1 and tests.try(format($$update live_sessions set left_at = null where live_class_id = %L$$, lc)) = -1 and tests.try(format($$delete from live_sessions where live_class_id = %L$$, lc)) = -1);
+
+  -- the student closes the browser: no heartbeat for 3 minutes
+  perform tests.su();
+  update live_sessions set last_seen_at = now() - interval '3 minutes' where live_class_id = lc and user_id = sa and left_at is null;
+  perform tests.as_user(sa);
+  select * into r from my_live_status(lc);
+  perform tests.check('P19: no heartbeat for 2 minutes counts as left, at the last heartbeat', not r.in_class and r.left_at is not null and r.left_at <= now() - interval '2 minutes 30 seconds');
+  perform live_heartbeat(lc);
+  perform tests.check('P19: a late heartbeat brings the visit back (a bad connection does not lose the person)', (select in_class from my_live_status(lc)));
+
+  perform tests.su(); perform tests.as_user(sb);
+  perform record_join(lc, 'app');
+  perform tests.check('P19: a join through the app is stored as via app', (select via from live_sessions where live_class_id = lc and user_id = sb) = 'app');
+  perform tests.check('P19: a student sees only their own visits', (select count(*) from live_sessions where live_class_id = lc) = 1);
+  perform tests.check('SECURITY: a student cannot read the staff list', tests.try(format('select * from live_joined(%L)', lc)) = -1);
+
+  perform tests.su(); perform tests.as_user(ta);
+  perform tests.check('P19: the teacher sees both students, with who is in the class now', (select count(*) from live_joined(lc)) = 2 and (select count(*) from live_joined(lc) where in_class) = 2);
+  select * into r from live_joined(lc) where full_name = 'P19 SA';
+  j := r.visits;
+  perform tests.check('P19: the list has each visit with join and leave times, and a total', jsonb_array_length(j) = 3 and r.join_count = 3 and r.total_seconds >= 0 and (j->0->>'left_at') is not null);
+  perform tests.su();
+  update live_sessions set last_seen_at = now() - interval '5 minutes' where live_class_id = lc and user_id = sb and left_at is null;
+  perform tests.as_user(ta);
+  perform tests.check('P19: someone who stops sending heartbeats shows as left in the staff list', (select not in_class from live_joined(lc) where full_name = 'P19 SB') and (select last_left_at from live_joined(lc) where full_name = 'P19 SB') is not null);
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: a teacher of another course cannot read the list', tests.try(format('select * from live_joined(%L)', lc)) = -1);
+  perform tests.su(); perform tests.as_user(ad);
+  perform tests.check('P19: an admin can read the list', (select count(*) from live_joined(lc)) = 2);
+  perform tests.su();
+  delete from live_classes where id = lc;
+  perform tests.check('P19: deleting a class deletes its visits', (select count(*) from live_sessions where live_class_id = lc) = 0);
+end $t17$;
+
 select n, case when ok then 'PASS' else 'FAIL' end as result, name from tests.results order by n;
 select count(*) filter (where ok) as passed, count(*) filter (where not ok) as failed from tests.results;
