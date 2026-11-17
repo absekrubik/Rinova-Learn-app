@@ -28,6 +28,7 @@ Dashboard > **SQL Editor** > New query > paste each file and press **Run**:
 16. `migrations/016_phase15_mastery.sql` (topics, tags on lessons and quiz questions, and the mastery functions; students only see their own mastery)
 17. `migrations/017_phase16_lesson_questions.sql` (questions and replies under a lesson, optionally tied to a video time, with teacher notifications)
 18. `migrations/018_phase17_live_pulse.sql` (anonymous "I'm lost" pulse and live polls during a class)
+19. `migrations/019_phase18_live_joins.sql` (records who pressed Join on a live class, so the page can show "Joined" and teachers can see who is in)
 
 ## 3. Authentication settings
 Dashboard > **Authentication**:

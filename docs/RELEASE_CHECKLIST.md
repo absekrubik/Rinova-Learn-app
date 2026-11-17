@@ -7,7 +7,7 @@ Tick every box on the real site (not a local copy) before giving students access
 - [ ] (Optional, needs a throw-away local Postgres) `supabase/tests/run_tests.sh` ends with `0 failed`
 
 ## Setup
-- [ ] Migrations 001 to 018 ran with no errors
+- [ ] Migrations 001 to 019 ran with no errors
 - [ ] `js/config.js` has your Project URL and publishable key (no secret key anywhere)
 - [ ] Auth: Site URL and Redirect URLs match your Pages address, "Confirm email" is on
 - [ ] `create-user` function is deployed and `ALLOWED_ORIGIN` is set
@@ -72,3 +72,9 @@ The database tests prove a locked lesson's row and attached files are hidden. Vi
 - [ ] Teacher starts a poll; a student votes and can change the vote; closing the poll shows totals to everyone
 - [ ] Outside the class window the pulse box is gone
 - [ ] Student Study plan shows the week, ticks are remembered after reload, and changing daily time re-plans
+
+## Joined status (migration 019)
+- [ ] Student presses Join during a class: the meeting opens in its own tab and the class page shows "Joined" with the time
+- [ ] Student closes the meeting tab, returns to the class page and presses Rejoin: the meeting opens again
+- [ ] Teacher and admin see "Who has joined" with names, times and "N of M students"
+- [ ] A student cannot see that list, and pressing Join outside the class window records nothing

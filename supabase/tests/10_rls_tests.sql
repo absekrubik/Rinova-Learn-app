@@ -1698,5 +1698,55 @@ begin
   perform tests.check('P17: deleting a class deletes its pulse, polls and votes', (select count(*) from live_pulse where live_class_id = lc) = 0 and (select count(*) from live_polls where live_class_id = lc) = 0 and (select count(*) from live_poll_votes where poll_id = p1) = 0);
 end $t15$;
 
+-- ---------------------------------------------------------------------
+-- Phase 18: Joined status for live classes
+-- ---------------------------------------------------------------------
+do $t16$
+declare
+  ta uuid := '00000000-0000-0000-0000-0000000018a1'; tb uuid := '00000000-0000-0000-0000-0000000018a2'; ad uuid := '00000000-0000-0000-0000-0000000018a0';
+  sa uuid := '00000000-0000-0000-0000-0000000018b1'; sb uuid := '00000000-0000-0000-0000-0000000018b2'; sx uuid := '00000000-0000-0000-0000-0000000018b4';
+  cid uuid; cid2 uuid; lc uuid; lc_future uuid; lc_cancel uuid; lc_past uuid; lc_other uuid; r record; n int;
+begin
+  insert into auth.users(id, email, raw_user_meta_data, raw_app_meta_data) values
+    (ta,'p18ta@x.test','{"full_name":"P18 TA"}','{"role":"teacher"}'), (tb,'p18tb@x.test','{"full_name":"P18 TB"}','{"role":"teacher"}'), (ad,'p18ad@x.test','{"full_name":"P18 Admin"}','{"role":"admin"}'),
+    (sa,'p18sa@x.test','{"full_name":"P18 SA"}','{}'), (sb,'p18sb@x.test','{"full_name":"P18 SB"}','{}'), (sx,'p18sx@x.test','{"full_name":"P18 SX"}','{}');
+  insert into courses(title, created_by, status) values ('P18 Course', ta, 'published') returning id into cid;
+  insert into courses(title, created_by, status) values ('P18 Other', tb, 'published') returning id into cid2;
+  insert into enrollments(course_id, student_id) values (cid, sa), (cid, sb), (cid2, sx);
+  insert into live_classes(course_id,title,starts_at,ends_at) values (cid,'On now', now() - interval '10 minutes', now() + interval '50 minutes') returning id into lc;
+  insert into live_classes(course_id,title,starts_at,ends_at) values (cid,'Next week', now() + interval '3 days', now() + interval '3 days 1 hour') returning id into lc_future;
+  insert into live_classes(course_id,title,starts_at,ends_at,status) values (cid,'Cancelled', now() - interval '10 minutes', now() + interval '50 minutes','cancelled') returning id into lc_cancel;
+  insert into live_classes(course_id,title,starts_at,ends_at) values (cid,'Long over', now() - interval '5 hours', now() - interval '4 hours') returning id into lc_past;
+  insert into live_classes(course_id,title,starts_at,ends_at) values (cid2,'Other course', now() - interval '10 minutes', now() + interval '50 minutes') returning id into lc_other;
+
+  perform tests.as_user(sa);
+  select * into r from record_join(lc);
+  perform tests.check('P18: a student joining is recorded once', r.join_count = 1 and (select count(*) from live_joins where live_class_id = lc) = 1);
+  select * into r from record_join(lc);
+  perform tests.check('P18: rejoining adds to the count but keeps one row and the first join time', r.join_count = 2 and (select count(*) from live_joins where live_class_id = lc) = 1 and r.first_joined_at <= r.last_joined_at);
+  perform tests.check('SECURITY: no join recorded before the window, after it, or for a cancelled class', tests.try(format('select * from record_join(%L)', lc_future)) = -1 and tests.try(format('select * from record_join(%L)', lc_past)) = -1 and tests.try(format('select * from record_join(%L)', lc_cancel)) = -1);
+  perform tests.check('SECURITY: no join for a class of a course the student is not in', tests.try(format('select * from record_join(%L)', lc_other)) = -1);
+  perform tests.check('SECURITY: nobody writes the table directly', tests.try(format($$insert into live_joins(live_class_id, user_id, course_id) values (%L, %L, %L)$$, lc, sa, cid)) = -1 and tests.try(format($$update live_joins set join_count = 99 where live_class_id = %L$$, lc)) = -1 and tests.try(format($$delete from live_joins where live_class_id = %L$$, lc)) = -1);
+  perform tests.check('SECURITY: a student cannot read who joined', tests.try(format('select * from live_joined(%L)', lc)) = -1);
+  perform tests.su(); perform tests.as_user(sb);
+  perform record_join(lc);
+  perform tests.check('P18: a student sees only their own join row', (select count(*) from live_joins where live_class_id = lc) = 1 and (select user_id from live_joins where live_class_id = lc) = sb);
+  perform tests.su(); perform tests.as_user(sx);
+  perform tests.check('SECURITY: a student of another course sees nothing here', (select count(*) from live_joins where live_class_id = lc) = 0);
+
+  perform tests.su(); perform tests.as_user(ta);
+  perform record_join(lc);
+  perform tests.check('P18: the teacher of the course can join (and is recorded as staff)', (select count(*) from live_joins where live_class_id = lc) = 1);
+  perform tests.check('P18: the teacher sees the list: 3 joined, with names, staff flagged, and the enrolled total', (select count(*) from live_joined(lc)) = 3 and (select count(*) from live_joined(lc) where is_staff) = 1 and (select max(enrolled) from live_joined(lc)) = 2 and (select count(*) from live_joined(lc) where full_name like 'P18 S%') = 2);
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: a teacher of another course cannot read the list or join', tests.try(format('select * from live_joined(%L)', lc)) = -1 and tests.try(format('select * from record_join(%L)', lc)) = -1);
+  perform tests.su(); perform tests.as_user(ad);
+  perform tests.check('P18: an admin can read the list and join any open class', (select count(*) from live_joined(lc)) = 3 and tests.try(format('select * from record_join(%L)', lc_other)) = 1);
+
+  perform tests.su();
+  delete from live_classes where id = lc;
+  perform tests.check('P18: deleting a class deletes its joins', (select count(*) from live_joins where live_class_id = lc) = 0);
+end $t16$;
+
 select n, case when ok then 'PASS' else 'FAIL' end as result, name from tests.results order by n;
 select count(*) filter (where ok) as passed, count(*) filter (where not ok) as failed from tests.results;

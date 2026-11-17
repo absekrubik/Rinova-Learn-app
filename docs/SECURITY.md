@@ -31,3 +31,7 @@
 - Lesson questions follow the lesson's own visibility, so a locked or draft lesson shows no thread. Students can post 20 times an hour at most, and cannot pin or edit other people's posts.
 - Pulse taps and poll votes are readable only by their owner. Teachers get counts only (never names) and only for the last 5 minutes of pulse.
 - The study plan is computed in the browser from data the student can already read; only ticks and the daily-time choice are kept, in this browser's local storage.
+
+## Joined status (migration 019)
+- `live_joins` has no direct write access. Joins are recorded only by `record_join()`, which checks the class window (15 minutes before the start to 1 hour after the end) and that the caller is an enrolled student, a teacher of the course, or an admin.
+- A person can read only their own join row. Staff read the list through `live_joined()`, which returns names and times, never emails.

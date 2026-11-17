@@ -33,10 +33,14 @@ export function joinUrl(c, displayName = '') {
   return null;
 }
 /** Phones: Jitsi's website cannot share the screen on mobile, but its free app can. Returns { kind, url } for opening the room in the app, or null. */
-export function jitsiAppLink(c, ua = (typeof navigator !== 'undefined' ? navigator.userAgent : '')) {
+export function jitsiAppLink(c, ua = (typeof navigator !== 'undefined' ? navigator.userAgent : ''), touch = (typeof navigator !== 'undefined' ? navigator.maxTouchPoints || 0 : 0)) {
   if (c.meeting_url || !ROOM_RE.test(c.room_name ?? '')) return null;
-  if (/Android/i.test(ua)) return { kind: 'android', url: `intent://meet.jit.si/${c.room_name}#Intent;scheme=https;package=org.jitsi.meet;S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=org.jitsi.meet')};end` };
-  if (/iPhone|iPad|iPod/i.test(ua)) return { kind: 'ios', url: `org.jitsi.meet://meet.jit.si/${c.room_name}` };
+  // Android phones, tablets and touch panels, including ones whose browser is set to "desktop site" (it then says Linux, not Android)
+  const android = /Android/i.test(ua) || (/Linux/i.test(ua) && !/CrOS/i.test(ua) && touch > 0);
+  // iPhone, iPad, and iPadOS in desktop mode (it says Macintosh but has a touch screen)
+  const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && touch > 1);
+  if (android) return { kind: 'android', url: `intent://meet.jit.si/${c.room_name}#Intent;scheme=https;package=org.jitsi.meet;S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=org.jitsi.meet')};end` };
+  if (ios) return { kind: 'ios', url: `org.jitsi.meet://meet.jit.si/${c.room_name}` };
   return null;
 }
 export const providerLabel = (c) => {
@@ -78,3 +82,23 @@ export async function deleteClass(id) {
 /** datetime-local <-> ISO helpers (the browser shows and edits local time; the database stores UTC). */
 export const toLocalInput = (iso) => { const d = new Date(iso); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
 export const fromLocalInput = (v) => { const d = new Date(v); return Number.isNaN(d.getTime()) ? null : d.toISOString(); };
+
+// ---- "Joined" status (migration 019) ----
+/** Records that the signed-in user pressed Join (only works while the class is open). Returns { first_joined_at, last_joined_at, join_count }. */
+export async function recordJoin(classId) {
+  const { data, error } = await requireClient().rpc('record_join', { p_class: classId });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] ?? null : data;
+}
+/** The signed-in user's own join record for a class, or null. */
+export async function myJoin(classId) {
+  const { data, error } = await requireClient().from('live_joins').select('first_joined_at,last_joined_at,join_count').eq('live_class_id', classId).maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+/** Staff only: everyone who has joined, oldest first, with the number of enrolled students. */
+export async function joinedList(classId) {
+  const { data, error } = await requireClient().rpc('live_joined', { p_class: classId });
+  if (error) throw error;
+  return data ?? [];
+}

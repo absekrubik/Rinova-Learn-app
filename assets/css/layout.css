@@ -458,3 +458,4 @@ pre, code { overflow-wrap: anywhere; } pre { overflow-x: auto; }
 .row { flex-wrap: wrap; } .page-head h1, .card h3 { overflow-wrap: anywhere; }
 .callout { padding: var(--sp-4); border-radius: var(--radius); background: var(--brand-50, #EEF3FD); border: 1px solid var(--brand-100, #D6E2FB); }
 .stack-sm { display: grid; gap: var(--sp-2); }
+.chip-ok { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: var(--fs-xs); font-weight: 600; background: var(--green-100, #E3F3E0); color: #1F6B17; }
