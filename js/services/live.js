@@ -32,6 +32,13 @@ export function joinUrl(c, displayName = '') {
   }
   return null;
 }
+/** Phones: Jitsi's website cannot share the screen on mobile, but its free app can. Returns { kind, url } for opening the room in the app, or null. */
+export function jitsiAppLink(c, ua = (typeof navigator !== 'undefined' ? navigator.userAgent : '')) {
+  if (c.meeting_url || !ROOM_RE.test(c.room_name ?? '')) return null;
+  if (/Android/i.test(ua)) return { kind: 'android', url: `intent://meet.jit.si/${c.room_name}#Intent;scheme=https;package=org.jitsi.meet;S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=org.jitsi.meet')};end` };
+  if (/iPhone|iPad|iPod/i.test(ua)) return { kind: 'ios', url: `org.jitsi.meet://meet.jit.si/${c.room_name}` };
+  return null;
+}
 export const providerLabel = (c) => {
   if (!c.meeting_url) return 'Jitsi Meet';
   try { const h = new URL(c.meeting_url).hostname.replace(/^www\./, ''); return h === 'meet.google.com' ? 'Google Meet' : /(^|\.)zoom\.us$/.test(h) ? 'Zoom' : h === 'teams.microsoft.com' ? 'Microsoft Teams' : h; } catch { return 'External link'; }

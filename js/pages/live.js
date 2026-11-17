@@ -42,13 +42,15 @@ async function load() {
     const st = live.classState(c), now = Date.now(), can = canManage ? c.status !== 'cancelled' : live.canJoinNow(c);
     content.querySelector('#state').innerHTML = stateBadge(st);
     const target = live.joinUrl(c, me.full_name || '');
-    const box = content.querySelector('#join-box'); let msg = '';
+    const box = content.querySelector('#join-box'); let msg = ''; const app = live.jitsiAppLink(c);
     if (c.status === 'cancelled') msg = 'This class was cancelled.';
     else if (!target) msg = 'This class has no valid meeting link. Ask your teacher.';
     else if (!can) msg = st === 'upcoming' ? `You can join from 15 minutes before the start (in about ${untilText(new Date(c.starts_at) - now - live.JOIN_EARLY_MS)}).` : 'This class has ended.';
     box.innerHTML = html`<div class="row row-between"><div><strong>${can && target ? (canManage ? 'Start or join the class' : 'The class is open') : 'Join'}</strong>
       <div class="text-muted text-sm">${msg || (c.meeting_url ? 'Opens your meeting link in a new tab.' : 'Opens in a new tab. The teacher may be asked to sign in to Jitsi to start the room; students just join.')}</div></div>
-      ${raw(can && target ? `<a class="btn btn-primary" id="join" href="${target}" target="_blank" rel="noopener noreferrer">${canManage ? 'Start class' : 'Join class'}</a>` : '<button class="btn btn-primary" disabled>Join class</button>')}</div>`;
+      ${raw(can && target && app ? html`<div class="stack-sm" style="min-width:min(100%,15rem)"><a class="btn btn-primary" id="join-app" href="${app.url}">${canManage ? 'Start in the app' : 'Join in the app'}</a><a class="btn btn-secondary" id="join" href="${target}" target="_blank" rel="noopener noreferrer">Join in browser instead</a></div>`.toString()
+        : can && target ? `<a class="btn btn-primary" id="join" href="${target}" target="_blank" rel="noopener noreferrer">${canManage ? 'Start class' : 'Join class'}</a>` : '<button class="btn btn-primary" disabled>Join class</button>')}</div>
+      ${raw(can && target && app ? '<div class="text-muted text-sm" id="app-tip" style="margin-top:var(--sp-3)">On a phone, screen sharing only works in the free Jitsi Meet app (three dots, then Share screen). If you do not have it yet, the first button takes you to the store. The browser cannot share your screen.</div>' : '')}`;
   };
   paint(); timer = setInterval(paint, 30000);
   if (c.status !== 'cancelled') pulseCtl = mountPulse(content.querySelector('#pulse-box'), { cls: c, canManage });

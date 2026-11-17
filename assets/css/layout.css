@@ -456,3 +456,5 @@ pre, code { overflow-wrap: anywhere; } pre { overflow-x: auto; }
 
 /* people who prefer larger text or high zoom: let rows wrap instead of clipping */
 .row { flex-wrap: wrap; } .page-head h1, .card h3 { overflow-wrap: anywhere; }
+.callout { padding: var(--sp-4); border-radius: var(--radius); background: var(--brand-50, #EEF3FD); border: 1px solid var(--brand-100, #D6E2FB); }
+.stack-sm { display: grid; gap: var(--sp-2); }
