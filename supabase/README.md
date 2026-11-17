@@ -25,6 +25,9 @@ Dashboard > **SQL Editor** > New query > paste each file and press **Run**:
 13. `migrations/013_phase10_reports.sql` (added in Phase 10: read-only report and grade functions; students only ever see their own numbers)
 14. `migrations/014_phase13_early_warning.sql` (added for the Needs attention list: read-only warning signs for teachers and a rate-limited nudge to a student)
 15. `migrations/015_phase14_unlock_rules.sql` (added for unlock rules: locked lessons are hidden from students by Row Level Security, plus the learning-path functions)
+16. `migrations/016_phase15_mastery.sql` (topics, tags on lessons and quiz questions, and the mastery functions; students only see their own mastery)
+17. `migrations/017_phase16_lesson_questions.sql` (questions and replies under a lesson, optionally tied to a video time, with teacher notifications)
+18. `migrations/018_phase17_live_pulse.sql` (anonymous "I'm lost" pulse and live polls during a class)
 
 ## 3. Authentication settings
 Dashboard > **Authentication**:

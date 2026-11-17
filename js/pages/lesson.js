@@ -8,6 +8,7 @@ import * as courses from '../services/courses.js';
 import * as api from '../services/content.js';
 import * as unlock from '../services/unlock.js';
 import { renderGate } from '../ui/unlock-ui.js';
+import { mountQA } from '../ui/qa-ui.js';
 import { materialList, wireMaterials, materialDialog } from './course-content.js';
 
 const role = document.body.dataset.role;
@@ -53,14 +54,20 @@ async function load() {
     ${raw(progress ? '<div id="done-box"></div>' : '')}
     <div class="card" style="padding:var(--sp-4)"><div class="row row-between" style="margin-bottom:var(--sp-2)"><h3 style="margin:0">Attachments</h3>${raw(canManage ? '<button class="btn btn-secondary btn-sm" id="addatt">Upload attachment</button>' : '')}</div>
       <div id="atts">${raw(attachments.length ? materialList(attachments, canManage) : '<div class="text-muted text-sm">No attachments.</div>')}</div></div>
+    <div id="qa"></div>
     <div class="lesson-nav">${raw(prev ? `<a class="btn btn-secondary" href="${lessonUrl(prev.id)}">&larr; ${esc(prev.title)}</a>` : '<span></span>')}${raw(next ? `<a class="btn btn-secondary" id="next" href="${lessonUrl(next.id)}">${esc(next.title)} &rarr;</a>` : '<span></span>')}</div></div>`;
 
   wireMaterials(content.querySelector('#atts'), attachments, load);
   content.querySelector('#addatt')?.addEventListener('click', () => materialDialog(course.id, lesson.id, load));
+  player = null;
   await renderMedia(lesson, primaryPdf, rec, canManage);
   if (progress) wireDone(lesson, rec, next);
+  const t = Number(param('t'));
+  if (player && param('t') && Number.isFinite(t) && t >= 0) player.seek(Math.floor(t), { autoplay: false });
+  await mountQA(content.querySelector('#qa'), { lesson, me, canManage, player, focusId: /^[0-9a-f-]{36}$/i.test(param('q') ?? '') ? param('q') : null });
 }
 const esc = (s) => html`${s}`;
+let player = null;   // what the questions box needs to read the time and jump around the video
 
 async function renderMedia(lesson, primaryPdf, rec, canManage) {
   const box = content.querySelector('#media');
@@ -76,13 +83,25 @@ async function renderMedia(lesson, primaryPdf, rec, canManage) {
       const v = api.parseVideoUrl(lesson.video_url);
       box.innerHTML = v ? html`<div class="player"><iframe src="${v.embedUrl}" title="${lesson.title}" allow="fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"></iframe></div><p class="text-muted text-sm">Having trouble? <a href="${v.watchUrl}" target="_blank" rel="noopener noreferrer">Open the video on ${v.provider === 'youtube' ? 'YouTube' : 'Vimeo'}</a>.</p>`
         : emptyState('Video link not supported', 'Only YouTube and Vimeo links can be embedded.');
+      const frame = box.querySelector('iframe');
+      if (v && frame) player = { canRead: false, seek(sec) {
+        const u = new URL(v.embedUrl);
+        if (v.provider === 'youtube') { u.searchParams.set('start', String(sec)); u.searchParams.set('autoplay', '1'); } else u.hash = `t=${sec}s`;
+        frame.src = u.href; frame.scrollIntoView({ block: 'center' });
+      } };
       return;
     }
     if (!lesson.video_path) { box.innerHTML = emptyState('No video yet', canManage ? 'Edit the lesson and upload a video or add a link.' : 'The video for this lesson is not available.'); return; }
     const u = await api.signedUrl('lesson-videos', lesson.video_path);
     box.innerHTML = html`<div class="player"><video controls controlsList="nodownload" playsinline preload="metadata" src="${u}">Your browser cannot play this video.</video></div>`;
+    const vid = box.querySelector('video');
+    player = { canRead: true, current: () => vid.currentTime, seek(sec, { autoplay = true } = {}) {
+      const go = () => { vid.currentTime = sec; if (autoplay) vid.play?.().catch(() => {}); };
+      vid.readyState >= 1 ? go() : vid.addEventListener('loadedmetadata', go, { once: true });
+      vid.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    } };
     if (canManage) return;
-    trackVideo(box.querySelector('video'), lesson, rec);
+    trackVideo(vid, lesson, rec);
   } catch (e) { console.error(e); box.innerHTML = errorState(e.message ?? 'Could not load this lesson.'); }
 }
 

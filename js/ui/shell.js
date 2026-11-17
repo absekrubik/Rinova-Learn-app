@@ -21,6 +21,9 @@ const I = {
   clip: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/>',
   cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   flag: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  route: '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/>',
+  ask: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><path d="M12 17h.01"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
 };
 const icon = (n) => raw(`<svg viewBox="0 0 24 24" aria-hidden="true">${I[n]}</svg>`);
@@ -32,14 +35,14 @@ export const NAV = {
     { label: 'Manage', items: [
       { href: 'admin/users.html', text: 'Users', icon: 'users' }, { href: 'admin/courses.html', text: 'Courses', icon: 'book' },
       { href: 'admin/live-classes.html', text: 'Live classes', icon: 'video' }, { href: 'admin/assignments.html', text: 'Assignments', icon: 'check' }, { href: 'admin/quizzes.html', text: 'Quizzes', icon: 'quiz' }, { href: 'admin/announcements.html', text: 'Announcements', icon: 'megaphone' }, { href: 'admin/messages.html', text: 'Messages', icon: 'chat' },
-      { href: 'admin/reports.html', text: 'Reports', icon: 'chart' }, { href: 'admin/needs-attention.html', text: 'Needs attention', icon: 'flag' }] },
+      { href: 'admin/reports.html', text: 'Reports', icon: 'chart' }, { href: 'admin/needs-attention.html', text: 'Needs attention', icon: 'flag' }, { href: 'admin/questions.html', text: 'Questions', icon: 'ask' }] },
   ],
   teacher: [
     { label: 'Overview', items: [{ href: 'teacher/index.html', text: 'Dashboard', icon: 'home' }, { href: 'teacher/calendar.html', text: 'Calendar', icon: 'cal' }] },
     { label: 'Teach', items: [
       { href: 'teacher/courses.html', text: 'My courses', icon: 'book' }, { href: 'teacher/live-classes.html', text: 'Live classes', icon: 'video' },
       { href: 'teacher/assignments.html', text: 'Assignments', icon: 'check' },
-      { href: 'teacher/quizzes.html', text: 'Quizzes', icon: 'quiz' }, { href: 'teacher/reports.html', text: 'Reports', icon: 'chart' }, { href: 'teacher/needs-attention.html', text: 'Needs attention', icon: 'flag' }] },
+      { href: 'teacher/quizzes.html', text: 'Quizzes', icon: 'quiz' }, { href: 'teacher/reports.html', text: 'Reports', icon: 'chart' }, { href: 'teacher/needs-attention.html', text: 'Needs attention', icon: 'flag' }, { href: 'teacher/questions.html', text: 'Questions', icon: 'ask' }] },
     { label: 'Communicate', items: [{ href: 'teacher/announcements.html', text: 'Announcements', icon: 'megaphone' }, { href: 'teacher/messages.html', text: 'Messages', icon: 'chat' }] },
   ],
   student: [
@@ -47,7 +50,7 @@ export const NAV = {
     { label: 'Learn', items: [
       { href: 'student/courses.html', text: 'My courses', icon: 'book' }, { href: 'student/live-classes.html', text: 'Live classes', icon: 'video' },
       { href: 'student/assignments.html', text: 'Assignments', icon: 'check' }, { href: 'student/quizzes.html', text: 'Quizzes', icon: 'quiz' },
-      { href: 'student/grades.html', text: 'Grades', icon: 'chart' }] },
+      { href: 'student/grades.html', text: 'Grades', icon: 'chart' }, { href: 'student/mastery.html', text: 'My mastery', icon: 'target' }, { href: 'student/study-plan.html', text: 'Study plan', icon: 'route' }] },
     { label: 'Communicate', items: [{ href: 'student/announcements.html', text: 'Announcements', icon: 'megaphone' }, { href: 'student/messages.html', text: 'Messages', icon: 'chat' }] },
   ],
 };

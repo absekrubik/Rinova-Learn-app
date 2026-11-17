@@ -14,40 +14,76 @@
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/layout.css">
   <style>
-    .hero { text-align: center; padding: var(--sp-9) 0 var(--sp-7); }
-    .hero img { height: 84px; width: auto; margin: 0 auto var(--sp-6); }
-    .hero h1 { font-size: clamp(2rem, 5vw, var(--fs-4xl)); letter-spacing: -0.035em; max-width: 14ch; margin: 0 auto var(--sp-4); }
-    .hero p { font-size: var(--fs-md); color: var(--text-muted); max-width: 52ch; margin: 0 auto var(--sp-6); }
-    .features { margin-top: var(--sp-7); }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-300); display: inline-block; }
-    .dot.ok { background: var(--green-500); } .dot.warn { background: var(--orange-500); }
+    .lp-nav { display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); max-width:1080px; margin:0 auto; padding:var(--sp-4) var(--sp-4); }
+    .lp-nav img { height:40px; width:auto; }
+    .lp-hero { background:linear-gradient(120deg,#072A6B 0%,#0B3C95 55%,#1E62C9 100%); color:#fff; position:relative; overflow:hidden; }
+    .lp-hero::after { content:""; position:absolute; right:-120px; top:-140px; width:460px; height:460px; border-radius:50%; background:rgba(255,255,255,.07); }
+    .lp-hero::before { content:""; position:absolute; left:-80px; bottom:-160px; width:340px; height:340px; border-radius:50%; background:rgba(58,154,47,.28); }
+    .lp-hero-in { max-width:1080px; margin:0 auto; padding:var(--sp-9) var(--sp-4) var(--sp-9); position:relative; z-index:1; }
+    .lp-hero h1 { color:#fff; font-size:clamp(2.1rem,5.5vw,3.4rem); line-height:1.08; letter-spacing:-0.035em; max-width:16ch; margin:0 0 var(--sp-4); }
+    .lp-hero p { color:rgba(255,255,255,.88); font-size:var(--fs-md); max-width:54ch; margin:0 0 var(--sp-6); }
+    .lp-hero .btn-primary { background:#fff; color:var(--brand-700); border-color:#fff; }
+    .lp-hero .btn-primary:hover { background:var(--brand-50); }
+    .lp-wrap { max-width:1080px; margin:0 auto; padding:var(--sp-8) var(--sp-4) var(--sp-6); }
+    .lp-wrap h2 { font-size:1.6rem; letter-spacing:-0.02em; margin:0 0 var(--sp-2); }
+    .lp-sub { color:var(--text-muted); margin:0 0 var(--sp-6); max-width:60ch; }
+    .lp-roles { display:grid; gap:var(--sp-4); grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); }
+    .lp-role { padding:var(--sp-5); border-radius:18px; }
+    .lp-ico { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:var(--brand-50); color:var(--brand-700); margin-bottom:var(--sp-3); }
+    .lp-role:nth-child(2) .lp-ico { background:var(--green-100); color:var(--green-600); }
+    .lp-role:nth-child(3) .lp-ico { background:var(--orange-100); color:#B35F00; }
+    .lp-ico svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .lp-role h3 { margin:0 0 var(--sp-2); font-size:1.1rem; }
+    .lp-role ul { margin:0; padding-left:1.1rem; color:var(--text-muted); font-size:var(--fs-sm); display:grid; gap:6px; }
+    .lp-steps { display:grid; gap:var(--sp-4); grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); counter-reset:s; }
+    .lp-step { counter-increment:s; padding:var(--sp-4) 0; }
+    .lp-step::before { content:counter(s); display:grid; place-items:center; width:36px; height:36px; border-radius:50%; background:var(--brand-700); color:#fff; font-weight:700; margin-bottom:var(--sp-3); }
+    .lp-step h4 { margin:0 0 4px; } .lp-step p { margin:0; color:var(--text-muted); font-size:var(--fs-sm); }
+    .lp-cta { text-align:center; margin:var(--sp-6) 0 var(--sp-8); padding:var(--sp-7) var(--sp-4); border-radius:20px; background:var(--brand-50); }
+    .lp-cta h2 { margin-bottom:var(--sp-4); }
+    .lp-foot { text-align:center; color:var(--text-muted); font-size:var(--fs-sm); padding:var(--sp-5) var(--sp-4) var(--sp-7); border-top:1px solid var(--border); }
+    .lp-warn { max-width:1080px; margin:var(--sp-3) auto 0; padding:0 var(--sp-4); }
+    .lp-warn p { background:var(--orange-100); border-radius:12px; padding:var(--sp-3) var(--sp-4); font-size:var(--fs-sm); margin:0; }
   </style>
 </head>
 <body>
 <noscript><p style="font-family:system-ui,sans-serif;max-width:40rem;margin:3rem auto;padding:0 1rem">Rinova Learn needs JavaScript to run. Please turn it on in your browser and reload this page.</p></noscript>
-  <main class="center-page" style="align-items:start">
-    <div class="content fade-up" style="max-width:900px">
-      <section class="hero">
-        <img src="assets/img/logo-full.png" alt="Rinova Learn">
-        <h1>Learn, teach and grow in one place.</h1>
-        <p>Courses, live classes, assignments and quizzes with a calm, focused interface for students, teachers and administrators.</p>
-        <div class="row" style="justify-content:center">
-          <a class="btn btn-primary btn-lg" id="signin" href="auth/login.html">Sign in</a>
-          <a class="btn btn-secondary btn-lg" href="design-system.html">Design system</a>
-        </div>
-      </section>
-
-      <section class="grid grid-3 features">
-        <div class="card"><h4>For students</h4><p class="text-muted text-sm" style="margin:0">Watch lessons, join live classes, submit work and track your progress.</p></div>
-        <div class="card"><h4>For teachers</h4><p class="text-muted text-sm" style="margin:0">Build courses, take attendance, grade assignments and run quizzes.</p></div>
-        <div class="card"><h4>For administrators</h4><p class="text-muted text-sm" style="margin:0">Manage users, courses and enrollments with a full overview.</p></div>
-      </section>
-
-      <p class="text-center text-sm text-muted" style="margin-top:var(--sp-7)">
-        <span class="dot" id="dot"></span> <span id="status">Checking setup…</span>
-      </p>
+  <div class="lp-hero">
+    <header class="lp-nav">
+      <img src="assets/img/logo-full.png" alt="Rinova Learn" style="filter:brightness(0) invert(1)">
+      <a class="btn btn-secondary" id="signin-top" href="auth/login.html">Sign in</a>
+    </header>
+    <div class="lp-hero-in">
+      <h1>Learn, teach and grow in one place.</h1>
+      <p>Courses, live classes, assignments and quizzes in a calm, focused platform for students, teachers and administrators.</p>
+      <a class="btn btn-primary btn-lg" id="signin" href="auth/login.html">Sign in</a>
     </div>
+  </div>
+  <div class="lp-warn" id="warn" hidden><p id="status"></p></div>
+  <main class="lp-wrap">
+    <h2>Everything your classroom needs</h2>
+    <p class="lp-sub">One platform for every role, each with a dashboard built for the work they do.</p>
+    <section class="lp-roles">
+      <div class="card lp-role"><div class="lp-ico"><svg viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg></div>
+        <h3>For students</h3><ul><li>Watch lessons and read materials</li><li>Join live classes</li><li>Submit assignments and take quizzes</li><li>Track progress and grades</li></ul></div>
+      <div class="card lp-role"><div class="lp-ico"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M8 20h8M12 16v4"/></svg></div>
+        <h3>For teachers</h3><ul><li>Build courses with modules and lessons</li><li>Take attendance and grade work</li><li>Run quizzes and live classes</li><li>See which students need attention</li></ul></div>
+      <div class="card lp-role"><div class="lp-ico"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3>For administrators</h3><ul><li>Manage users, courses and enrollments</li><li>Review reports and activity</li><li>Send announcements to everyone</li><li>Keep everything secure</li></ul></div>
+    </section>
+
+    <h2 style="margin-top:var(--sp-8)">How it works</h2>
+    <p class="lp-sub">Getting started takes a few minutes.</p>
+    <section class="lp-steps">
+      <div class="lp-step"><h4>Get your account</h4><p>Your school or administrator creates your login.</p></div>
+      <div class="lp-step"><h4>Join your courses</h4><p>Enrolled courses appear on your dashboard.</p></div>
+      <div class="lp-step"><h4>Learn and submit</h4><p>Work through lessons, quizzes and assignments.</p></div>
+      <div class="lp-step"><h4>Track progress</h4><p>See grades, attendance and what is next.</p></div>
+    </section>
+
+    <section class="lp-cta"><h2>Ready to get started?</h2><a class="btn btn-primary btn-lg" id="signin2" href="auth/login.html">Sign in to Rinova Learn</a></section>
   </main>
+  <footer class="lp-foot">&copy; <span id="yr"></span> Rinova Learn</footer>
   <script type="module" src="js/pages/index.js"></script>
 </body>
 </html>

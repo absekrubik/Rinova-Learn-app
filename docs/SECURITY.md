@@ -25,3 +25,9 @@
 - Live classes use a public Jitsi room name or a link you paste. Anyone with the link can join, so treat links as private.
 - File type checks use the browser-reported type plus Supabase bucket limits. Do not open student uploads outside the app if you do not trust the student.
 - Supabase's own limits (rate limits, free-plan pauses) apply.
+
+## Mastery, questions, pulse and polls (migrations 016 to 018)
+- Mastery and class mastery are read through functions that check the caller's role; `mastery_rows` is internal and not callable from the browser. Question tags are staff-only.
+- Lesson questions follow the lesson's own visibility, so a locked or draft lesson shows no thread. Students can post 20 times an hour at most, and cannot pin or edit other people's posts.
+- Pulse taps and poll votes are readable only by their owner. Teachers get counts only (never names) and only for the last 5 minutes of pulse.
+- The study plan is computed in the browser from data the student can already read; only ticks and the daily-time choice are kept, in this browser's local storage.

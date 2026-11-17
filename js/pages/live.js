@@ -6,18 +6,19 @@ import { toastSuccess, toastError } from '../ui/toast.js';
 import { emptyState, errorState, skeletonRows } from '../ui/states.js';
 import * as live from '../services/live.js';
 import * as courses from '../services/courses.js';
+import { mountPulse } from '../ui/pulse-ui.js';
 import { classDialog, stateBadge, whenText } from '../ui/live-ui.js';
 
 const role = document.body.dataset.role;
 const { me, content } = await mountShell({ roles: [role], active: `${role}/live-classes.html`, title: 'Live class' });
-const id = param('id'); let timer = null;
+const id = param('id'); let timer = null, pulseCtl = null;
 const listUrl = url(`${role}/live-classes.html`);
 const notFound = () => { content.innerHTML = `<a class="text-sm" href="${listUrl}">&larr; Live classes</a><div class="card" style="margin-top:var(--sp-4)">${emptyState('Class not found', 'It may have been removed, or you may not have access to it.')}</div>`; };
 
 function untilText(ms) { const m = Math.round(ms / 60000); if (m < 60) return `${m} minute${m === 1 ? '' : 's'}`; const h = Math.floor(m / 60); return h < 48 ? `${h} hour${h === 1 ? '' : 's'}` : `${Math.floor(h / 24)} days`; }
 
 async function load() {
-  clearInterval(timer);
+  clearInterval(timer); pulseCtl?.stop(); pulseCtl = null;
   if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return notFound();
   content.innerHTML = skeletonRows(3);
   let c, course;
@@ -33,6 +34,7 @@ async function load() {
     <div class="card"><div class="grid grid-2"><div><div class="text-muted text-sm">When</div><strong>${whenText(c)}</strong></div><div><div class="text-muted text-sm">Where</div><strong>${live.providerLabel(c)}</strong></div></div>
       ${raw(c.description ? html`<p class="pre-wrap" style="margin:var(--sp-4) 0 0">${c.description}</p>` : '')}</div>
     <div class="card" id="join-box"></div>
+    <div id="pulse-box"></div>
     ${raw(rec ? html`<div class="card"><div class="row row-between"><strong>Recording</strong><a class="btn btn-secondary btn-sm" href="${rec}" target="_blank" rel="noopener noreferrer">Watch recording</a></div></div>` : '')}
     ${raw(canManage ? html`<div class="card"><div class="row row-between"><div><strong>Attendance</strong><div class="text-muted text-sm">Mark who attended this class.</div></div><a class="btn btn-secondary" href="${courseUrl}&tab=attendance&live=${c.id}">Take attendance</a></div></div>` : '')}</div>`;
 
@@ -49,6 +51,7 @@ async function load() {
       ${raw(can && target ? `<a class="btn btn-primary" id="join" href="${target}" target="_blank" rel="noopener noreferrer">${canManage ? 'Start class' : 'Join class'}</a>` : '<button class="btn btn-primary" disabled>Join class</button>')}</div>`;
   };
   paint(); timer = setInterval(paint, 30000);
+  if (c.status !== 'cancelled') pulseCtl = mountPulse(content.querySelector('#pulse-box'), { cls: c, canManage });
 
   if (!canManage) return;
   content.querySelector('#cancel').textContent = c.status === 'cancelled' ? 'Restore class' : 'Cancel class';

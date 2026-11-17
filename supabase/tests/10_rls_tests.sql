@@ -1292,5 +1292,411 @@ begin
   perform tests.su();
 end $t12$;
 
+
+-- =====================================================================
+-- Phase 15: topic mastery map
+-- =====================================================================
+do $t13$
+declare
+  ta uuid := '00000000-0000-0000-0000-0000000015a1'; tb uuid := '00000000-0000-0000-0000-0000000015a2'; ad uuid := '00000000-0000-0000-0000-0000000015a0';
+  sa uuid := '00000000-0000-0000-0000-0000000015b1'; sb uuid := '00000000-0000-0000-0000-0000000015b2'; sx uuid := '00000000-0000-0000-0000-0000000015b3';
+  cid uuid; cid2 uuid; md uuid; md2 uuid; l1 uuid; l2 uuid; l3 uuid; lo uuid; q uuid; qs uuid[] := '{}'; qq uuid; o_ok uuid; o_bad uuid;
+  oks uuid[] := '{}'; bads uuid[] := '{}'; tf uuid; talg uuid; tother uuid; att uuid; r record; i int; js jsonb;
+begin
+  insert into auth.users(id, email, raw_user_meta_data, raw_app_meta_data) values
+    (ta,'p15ta@x.test','{"full_name":"P15 TA"}','{"role":"teacher"}'), (tb,'p15tb@x.test','{"full_name":"P15 TB"}','{"role":"teacher"}'), (ad,'p15ad@x.test','{"full_name":"P15 Admin"}','{"role":"admin"}'),
+    (sa,'p15sa@x.test','{"full_name":"P15 SA"}','{}'), (sb,'p15sb@x.test','{"full_name":"P15 SB"}','{}'), (sx,'p15sx@x.test','{"full_name":"P15 SX"}','{}');
+  insert into courses(title, created_by, status) values ('P15 Course', ta, 'published') returning id into cid;
+  insert into courses(title, created_by, status) values ('P15 Other', tb, 'published') returning id into cid2;
+  insert into enrollments(course_id, student_id) values (cid, sa), (cid, sb);
+  insert into modules(course_id,title,position) values (cid,'M',1) returning id into md;
+  insert into modules(course_id,title,position) values (cid2,'M2',1) returning id into md2;
+  insert into lessons(module_id,title,type,is_published,position) values (md,'Fractions intro','text',true,1) returning id into l1;
+  insert into lessons(module_id,title,type,is_published,position) values (md,'Algebra intro','text',true,2) returning id into l2;
+  insert into lessons(module_id,title,type,is_published,position) values (md,'Draft lesson','text',false,3) returning id into l3;
+  insert into lessons(module_id,title,type,is_published,position) values (md2,'Other lesson','text',true,1) returning id into lo;
+  insert into quizzes(course_id,title,pass_percent) values (cid,'Mixed quiz',50) returning id into q;
+  for i in 1..4 loop
+    insert into quiz_questions(quiz_id,type,prompt,points,position) values (q,'single','Q'||i,10,i) returning id into qq;
+    insert into quiz_options(question_id,label,position) values (qq,'right',1) returning id into o_ok;
+    insert into quiz_options(question_id,label,position) values (qq,'wrong',2) returning id into o_bad;
+    insert into quiz_answer_keys(question_id,correct_option_ids) values (qq, array[o_ok]);
+    qs := qs || qq; oks := oks || o_ok; bads := bads || o_bad;
+  end loop;
+  update quizzes set is_published = true where id = q;
+
+  -- ---- teachers manage topics ----
+  perform tests.as_user(ta);
+  insert into topics(course_id,name) values (cid,'Fractions') returning id into tf;
+  insert into topics(course_id,name) values (cid,'Algebra') returning id into talg;
+  perform tests.check('P15: a teacher creates topics for their course', (select count(*) from topics where course_id = cid) = 2);
+  perform tests.check('P15: topic names are unique per course, ignoring case and spaces', tests.try(format($$insert into topics(course_id,name) values (%L,'  fractions ')$$, cid)) = -1);
+  perform tests.check('P15: a blank or very long topic name is refused', tests.try(format($$insert into topics(course_id,name) values (%L,'   ')$$, cid)) = -1 and tests.try(format($$insert into topics(course_id,name) values (%L,%L)$$, cid, repeat('x', 61))) = -1);
+  perform tests.check('SECURITY: a teacher cannot add topics to someone else''s course', tests.try(format($$insert into topics(course_id,name) values (%L,'Sneaky')$$, cid2)) = -1);
+  perform tests.su(); perform tests.as_user(tb);
+  insert into topics(course_id,name) values (cid2,'Other topic') returning id into tother;
+  perform tests.check('SECURITY: another teacher sees only their own topics', (select count(*) from topics) = 1 and (select name from topics) = 'Other topic');
+  perform tests.su();
+  for i in 1..38 loop insert into topics(course_id,name) values (cid,'Filler '||i); end loop;
+  perform tests.check('P15: 40 topics in a course is the limit', (select count(*) from topics where course_id = cid) = 40 and tests.try(format($$insert into topics(course_id,name) values (%L,'One too many')$$, cid)) = -1);
+  delete from topics where course_id = cid and name like 'Filler %';
+
+  -- ---- tagging ----
+  perform tests.as_user(ta);
+  perform tests.check('P15: tag lessons', tests.try(format($$insert into lesson_topics(lesson_id,topic_id) values (%L,%L)$$, l1, tf)) = 1 and tests.try(format($$insert into lesson_topics(lesson_id,topic_id) values (%L,%L)$$, l2, talg)) = 1);
+  perform tests.check('P15: tag quiz questions (two for each topic)', tests.try(format($$insert into question_topics(question_id,topic_id) values (%L,%L),(%L,%L),(%L,%L),(%L,%L)$$, qs[1], tf, qs[2], tf, qs[3], talg, qs[4], talg)) = 4);
+  perform tests.check('P15: the tag takes its course from the lesson', (select count(*) from lesson_topics where course_id = cid) = 2);
+  perform tests.check('SECURITY: a topic of another course cannot be tagged on this course''s lesson or question', tests.try(format($$insert into lesson_topics(lesson_id,topic_id) values (%L,%L)$$, l1, tother)) = -1 and tests.try(format($$insert into question_topics(question_id,topic_id) values (%L,%L)$$, qs[1], tother)) = -1);
+  perform tests.check('P15: the same tag twice is refused', tests.try(format($$insert into lesson_topics(lesson_id,topic_id) values (%L,%L)$$, l1, tf)) = -1);
+  insert into topics(course_id,name) values (cid,'T3'),(cid,'T4');
+  perform tests.check('P15: at most 3 topics on one lesson', tests.try(format($$insert into lesson_topics(lesson_id,topic_id) select %L, id from topics where name in ('Algebra','T3','T4')$$, l1)) = -1 and (select count(*) from lesson_topics where lesson_id = l1) <= 3);
+  delete from lesson_topics where lesson_id = l1 and topic_id <> tf;
+  delete from topics where name in ('T3','T4') and course_id = cid;
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: another teacher cannot tag or read tags of my course', (select count(*) from lesson_topics) = 0 and (select count(*) from question_topics) = 0 and tests.try(format($$insert into lesson_topics(lesson_id,topic_id) values (%L,%L)$$, l3, talg)) = -1);
+
+  -- ---- what students can see ----
+  perform tests.su(); insert into lesson_topics(lesson_id,topic_id) values (l3, tf);        -- a draft lesson carries a tag too
+  perform tests.as_user(sa);
+  perform tests.check('P15: a student sees the topics of their course', (select count(*) from topics) = 2);
+  perform tests.check('P15: and which topic a lesson covers, but not the draft lesson''s tag', (select count(*) from lesson_topics) = 2 and (select count(*) from lesson_topics where lesson_id = l3) = 0);
+  perform tests.check('SECURITY: students cannot see which questions belong to which topic', (select count(*) from question_topics) = 0);
+  perform tests.check('SECURITY: students cannot create, change or delete topics or tags', tests.try(format($$insert into topics(course_id,name) values (%L,'Mine')$$, cid)) = -1 and tests.try('delete from topics') = 0 and tests.try('delete from lesson_topics') = 0 and tests.try(format($$update topics set name = 'x' where id = %L$$, tf)) = 0);
+  perform tests.su(); perform tests.as_user(sx);
+  perform tests.check('SECURITY: a student who is not enrolled sees no topics or tags', (select count(*) from topics) = 0 and (select count(*) from lesson_topics) = 0);
+
+  -- ---- mastery from quiz results ----
+  perform tests.su(); perform tests.as_user(sa);
+  select count(*) as n into r from my_mastery(cid);
+  perform tests.check('P15: before any quiz, every topic shows as untested', (select count(*) from my_mastery(cid) where level = 'untested' and percent is null) = 2);
+  att := start_quiz_attempt(q);
+  perform tests.check('P15: an unfinished attempt does not count', (select count(*) from my_mastery(cid) where level = 'untested') = 2);
+  perform submit_quiz_attempt(att, jsonb_build_array(
+    jsonb_build_object('question_id', qs[1], 'option_ids', jsonb_build_array(oks[1])), jsonb_build_object('question_id', qs[2], 'option_ids', jsonb_build_array(oks[2])),
+    jsonb_build_object('question_id', qs[3], 'option_ids', jsonb_build_array(bads[3])), jsonb_build_object('question_id', qs[4], 'option_ids', jsonb_build_array(bads[4]))));
+  select * into r from my_mastery(cid) where topic = 'Fractions';
+  perform tests.check('P15: Fractions (2 of 2 right) is 100% and strong', r.percent = 100 and r.level = 'strong' and r.questions = 2 and r.points_got = 20 and r.points_max = 20);
+  select * into r from my_mastery(cid) where topic = 'Algebra';
+  perform tests.check('P15: Algebra (0 of 2 right) is 0% and weak', r.percent = 0 and r.level = 'weak');
+  perform tests.check('P15: a weak topic lists the lessons to revisit, with their state', jsonb_array_length(r.lessons) = 1 and r.lessons->0->>'title' = 'Algebra intro' and (r.lessons->0->>'completed')::boolean = false and (r.lessons->0->>'locked')::boolean = false and r.lessons_total = 1 and r.lessons_done = 0);
+  perform tests.check('P15: the draft lesson never appears in the revision list', not exists (select 1 from my_mastery(cid) m where m.lessons::text like '%Draft lesson%') and (select lessons_total from my_mastery(cid) where topic = 'Fractions') = 1);
+  perform tests.check('P15: my_mastery with no course covers all my courses', (select count(*) from my_mastery()) = 2 and (select count(distinct course_id) from my_mastery()) = 1);
+  insert into lesson_progress(lesson_id, student_id, completed) values (l2, sa, true);
+  select * into r from my_mastery(cid) where topic = 'Algebra';
+  perform tests.check('P15: finishing the lesson shows in the numbers', r.lessons_done = 1 and (r.lessons->0->>'completed')::boolean);
+  -- retake: the latest attempt is the one that counts (now() is frozen inside one test transaction, so age the first attempt)
+  perform tests.su(); update quiz_attempts set submitted_at = now() - interval '1 hour', started_at = now() - interval '2 hours' where id = att; perform tests.as_user(sa);
+  att := start_quiz_attempt(q);
+  perform submit_quiz_attempt(att, jsonb_build_array(
+    jsonb_build_object('question_id', qs[1], 'option_ids', jsonb_build_array(bads[1])), jsonb_build_object('question_id', qs[2], 'option_ids', jsonb_build_array(oks[2])),
+    jsonb_build_object('question_id', qs[3], 'option_ids', jsonb_build_array(oks[3])), jsonb_build_object('question_id', qs[4], 'option_ids', jsonb_build_array(oks[4]))));
+  perform tests.check('P15: a retake replaces the old result (Fractions 50%, Algebra 100%)', (select percent from my_mastery(cid) where topic = 'Fractions') = 50 and (select level from my_mastery(cid) where topic = 'Fractions') = 'weak'
+    and (select percent from my_mastery(cid) where topic = 'Algebra') = 100 and (select level from my_mastery(cid) where topic = 'Algebra') = 'strong');
+  perform tests.check('P15: levels: 60 is ok, 80 is strong, 59.9 is weak, nothing is untested', mastery_level(60) = 'ok' and mastery_level(79.9) = 'ok' and mastery_level(80) = 'strong' and mastery_level(59.9) = 'weak' and mastery_level(null) = 'untested');
+  perform tests.su(); perform tests.as_user(sb);
+  perform tests.check('SECURITY: a student never sees another student''s mastery', (select count(*) from my_mastery(cid) where level = 'untested') = 2);
+
+  -- ---- locked lessons are flagged, not hidden ----
+  perform tests.su();
+  insert into unlock_rules(lesson_id, req_type, req_id) values (l2, 'lesson', l1);
+  perform tests.as_user(sb);
+  perform tests.check('P15: a lesson that is locked for this student is marked locked in the list', (select (lessons->0->>'locked')::boolean from my_mastery(cid) where topic = 'Algebra'));
+  perform tests.su();
+
+  -- ---- class view for teachers ----
+  perform tests.as_user(ta);
+  select * into r from class_mastery(cid) where topic = 'Fractions';
+  perform tests.check('P15: class view: Fractions was tested by 1 of 2 students, average 50%, 1 weak', r.students_tested = 1 and r.enrolled = 2 and r.avg_percent = 50 and r.weak_students = 1 and r.lessons_total = 1 and r.questions_tagged = 2);
+  select * into r from class_mastery(cid) where topic = 'Algebra';
+  perform tests.check('P15: class view: Algebra 100% with nobody weak', r.avg_percent = 100 and r.weak_students = 0);
+  perform tests.check('P15: topic_students lists who is weakest first, untested last', (select full_name from topic_students(cid, tf) limit 1) = 'P15 SA' and (select count(*) from topic_students(cid, tf)) = 2 and (select percent from topic_students(cid, tf) offset 1 limit 1) is null);
+  perform tests.check('P15: a topic from another course is refused', tests.try(format($$select * from topic_students(%L, %L)$$, cid, tother)) = -1);
+  perform tests.su(); perform tests.as_user(ad);
+  perform tests.check('P15: admin can use the class view', (select count(*) from class_mastery(cid)) = 2);
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: another teacher cannot use the class view or student list of my course', tests.try(format($$select * from class_mastery(%L)$$, cid)) = -1 and tests.try(format($$select * from topic_students(%L, %L)$$, cid, tf)) = -1);
+  perform tests.check('SECURITY: teachers do not get the student-only my_mastery', tests.try('select * from my_mastery()') = -1);
+  perform tests.su(); perform tests.as_user(sa);
+  perform tests.check('SECURITY: students cannot use the class view', tests.try(format($$select * from class_mastery(%L)$$, cid)) = -1 and tests.try(format($$select * from topic_students(%L, %L)$$, cid, tf)) = -1);
+  perform tests.su(); perform tests.as_user(sx);
+  perform tests.check('SECURITY: a student who is not enrolled is refused', tests.try(format($$select * from my_mastery(%L)$$, cid)) = -1);
+  perform tests.su(); perform tests.as_anon();
+  perform tests.check('SECURITY: anonymous users cannot call any mastery function', tests.try('select * from my_mastery()') = -1 and tests.try(format($$select * from class_mastery(%L)$$, cid)) = -1 and tests.try(format($$select * from topic_students(%L, %L)$$, cid, tf)) = -1);
+  perform tests.su();
+  perform tests.check('SECURITY: the internal mastery_rows function is not callable by users', has_function_privilege('authenticated', 'public.mastery_rows(uuid,uuid)', 'execute') = false);
+
+  -- ---- cleanup behaviour ----
+  delete from topics where id = tf;
+  perform tests.check('P15: deleting a topic removes its tags but not the lessons or questions', (select count(*) from lesson_topics where topic_id = tf) = 0 and (select count(*) from question_topics where topic_id = tf) = 0 and (select count(*) from lessons where id = l1) = 1 and (select count(*) from quiz_questions where quiz_id = q) = 4);
+end $t13$;
+
+
+-- =====================================================================
+-- Phase 16: questions on a lesson (pinned to a moment of the video)
+-- =====================================================================
+do $t14$
+declare
+  ta uuid := '00000000-0000-0000-0000-0000000016a1'; tb uuid := '00000000-0000-0000-0000-0000000016a2'; ad uuid := '00000000-0000-0000-0000-0000000016a0';
+  sa uuid := '00000000-0000-0000-0000-0000000016b1'; sb uuid := '00000000-0000-0000-0000-0000000016b2'; sx uuid := '00000000-0000-0000-0000-0000000016b3'; sc uuid := '00000000-0000-0000-0000-0000000016b4';
+  cid uuid; cid2 uuid; md uuid; md2 uuid; l1 uuid; l2 uuid; l3 uuid; lo uuid; q1 uuid; q2 uuid; rep uuid; rep2 uuid; i int; r record;
+begin
+  insert into auth.users(id, email, raw_user_meta_data, raw_app_meta_data) values
+    (ta,'p16ta@x.test','{"full_name":"P16 Teacher"}','{"role":"teacher"}'), (tb,'p16tb@x.test','{"full_name":"P16 TB"}','{"role":"teacher"}'), (ad,'p16ad@x.test','{"full_name":"P16 Admin"}','{"role":"admin"}'),
+    (sa,'p16sa@x.test','{"full_name":"P16 SA"}','{}'), (sb,'p16sb@x.test','{"full_name":"P16 SB"}','{}'), (sx,'p16sx@x.test','{"full_name":"P16 SX"}','{}'), (sc,'p16sc@x.test','{"full_name":"P16 SC"}','{}');
+  insert into courses(title, created_by, status) values ('P16 Course', ta, 'published') returning id into cid;
+  insert into courses(title, created_by, status) values ('P16 Other', tb, 'published') returning id into cid2;
+  insert into enrollments(course_id, student_id) values (cid, sa), (cid, sb), (cid, sc);
+  insert into modules(course_id,title,position) values (cid,'M',1) returning id into md;
+  insert into modules(course_id,title,position) values (cid2,'M2',1) returning id into md2;
+  insert into lessons(module_id,title,type,is_published,position) values (md,'Video lesson','video',true,1) returning id into l1;
+  insert into lessons(module_id,title,type,is_published,position) values (md,'Draft lesson','text',false,2) returning id into l2;
+  insert into lessons(module_id,title,type,is_published,position) values (md,'Locked lesson','text',true,3) returning id into l3;
+  insert into lessons(module_id,title,type,is_published,position) values (md2,'Other lesson','text',true,1) returning id into lo;
+  insert into unlock_rules(lesson_id, req_type, req_id) values (l3, 'lesson', l1);
+
+  -- ---- asking ----
+  perform tests.as_user(sa);
+  insert into lesson_questions(lesson_id, at_seconds, body, is_pinned, is_resolved) values (l1, 272, '  What does this step mean?  ', true, true) returning id into q1;
+  select * into r from lesson_questions where id = q1;
+  perform tests.check('P16: a student asks a question at a moment of the video', r.at_seconds = 272 and r.author_id = sa and r.parent_id is null and r.course_id = cid and r.body = 'What does this step mean?');
+  perform tests.check('SECURITY: a new question cannot arrive pinned or already answered', not r.is_pinned and not r.is_resolved);
+  perform tests.check('P16: an empty question or one over 1000 characters is refused', tests.try(format($$insert into lesson_questions(lesson_id, body) values (%L, '   ')$$, l1)) = -1 and tests.try(format($$insert into lesson_questions(lesson_id, body) values (%L, %L)$$, l1, repeat('x', 1001))) = -1);
+  perform tests.check('P16: a negative or absurd time is refused', tests.try(format($$insert into lesson_questions(lesson_id, at_seconds, body) values (%L, -5, 'x')$$, l1)) = -1 and tests.try(format($$insert into lesson_questions(lesson_id, at_seconds, body) values (%L, 999999, 'x')$$, l1)) = -1);
+  perform tests.check('P16: a question can also be asked without a time', tests.try(format($$insert into lesson_questions(lesson_id, body) values (%L, 'General question')$$, l1)) = 1);
+  perform tests.check('SECURITY: nobody can post as somebody else', tests.try(format($$insert into lesson_questions(lesson_id, author_id, body) values (%L, %L, 'Fake')$$, l1, sb)) = -1);
+  perform tests.check('SECURITY: a student cannot post on a draft lesson', tests.try(format($$insert into lesson_questions(lesson_id, body) values (%L, 'hi')$$, l2)) = -1);
+  perform tests.check('SECURITY: a student cannot post on a lesson that is still locked for them', tests.try(format($$insert into lesson_questions(lesson_id, body) values (%L, 'hi')$$, l3)) = -1);
+  perform tests.check('SECURITY: nor on a lesson of a course they are not in', tests.try(format($$insert into lesson_questions(lesson_id, body) values (%L, 'hi')$$, lo)) = -1);
+  perform tests.su();
+  perform tests.check('P16: teachers of the course are told about a new student question', (select count(*) from notifications where user_id = ta and type = 'lesson_question') = 2 and (select count(*) from notifications where user_id = sa and type = 'lesson_question') = 0);
+  perform tests.check('SECURITY: teachers of other courses are not told', (select count(*) from notifications where user_id = tb) = 0);
+
+  -- ---- who can read ----
+  perform tests.as_user(sb);
+  perform tests.check('P16: classmates see the questions', (select count(*) from lesson_questions where lesson_id = l1) = 2);
+  perform tests.su(); perform tests.as_user(sx);
+  perform tests.check('SECURITY: a student who is not enrolled sees nothing', (select count(*) from lesson_questions) = 0);
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: another teacher sees nothing of my course', (select count(*) from lesson_questions) = 0);
+  perform tests.su(); perform tests.as_anon();
+  perform tests.check('SECURITY: anonymous sees nothing and cannot post', tests.try('select * from lesson_questions') = -1 and tests.try(format($$insert into lesson_questions(lesson_id, body) values (%L, 'x')$$, l1)) = -1);
+
+  -- ---- answers ----
+  perform tests.su(); perform tests.as_user(ta);
+  insert into lesson_questions(lesson_id, parent_id, at_seconds, body) values (l1, q1, 99, 'It means the loop runs once.') returning id into rep;
+  perform tests.check('P16: a teacher''s reply marks the question answered', (select is_resolved from lesson_questions where id = q1));
+  perform tests.check('P16: a reply never carries a time of its own', (select at_seconds from lesson_questions where id = rep) is null);
+  perform tests.su();
+  perform tests.check('P16: the student is told about the reply', (select count(*) from notifications where user_id = sa and type = 'lesson_reply') = 1);
+  perform tests.as_user(ta);
+  perform tests.check('SECURITY: a reply cannot be replied to (no deep threads)', tests.try(format($$insert into lesson_questions(lesson_id, parent_id, body) values (%L, %L, 'x')$$, l1, rep)) = -1);
+  perform tests.check('SECURITY: a reply must belong to the same lesson as its question', tests.try(format($$insert into lesson_questions(lesson_id, parent_id, body) values (%L, %L, 'x')$$, l3, q1)) = -1);
+  perform tests.su(); perform tests.as_user(sb);
+  insert into lesson_questions(lesson_id, parent_id, body) values (l1, q1, 'I wondered the same') returning id into rep2;
+  perform tests.check('P16: a classmate can reply too', (select count(*) from lesson_questions where parent_id = q1) = 2);
+  perform tests.su();
+  update lesson_questions set is_resolved = false where id = q1;
+  perform tests.as_user(sb);
+  insert into lesson_questions(lesson_id, parent_id, body) values (l1, q1, 'Another student reply');
+  perform tests.su();
+  perform tests.check('P16: only a teacher''s reply marks a question answered', not (select is_resolved from lesson_questions where id = q1));
+  update lesson_questions set is_resolved = true where id = q1;
+
+  -- ---- pinning, answered mark, editing ----
+  perform tests.as_user(sa);
+  perform tests.check('SECURITY: a student cannot pin, even their own question', tests.try(format($$update lesson_questions set is_pinned = true where id = %L$$, q1)) = -1);
+  perform tests.check('P16: the author can mark their own question answered or reopen it', tests.try(format($$update lesson_questions set is_resolved = false where id = %L$$, q1)) = 1 and tests.try(format($$update lesson_questions set is_resolved = true where id = %L$$, q1)) = 1);
+  perform tests.check('SECURITY: the text of a post cannot be edited', tests.try(format($$update lesson_questions set body = 'changed' where id = %L$$, q1)) = -1);
+  perform tests.check('SECURITY: nobody can move a post to another lesson, time or author', tests.try(format($$update lesson_questions set lesson_id = %L where id = %L$$, l3, q1)) = -1 and tests.try(format($$update lesson_questions set at_seconds = 5 where id = %L$$, q1)) = -1 and tests.try(format($$update lesson_questions set author_id = %L where id = %L$$, sb, q1)) = -1);
+  perform tests.su(); perform tests.as_user(sb);
+  perform tests.check('SECURITY: a classmate cannot change someone else''s question', tests.try(format($$update lesson_questions set is_resolved = false where id = %L$$, q1)) = 0);
+  perform tests.su(); perform tests.as_user(ta);
+  perform tests.check('P16: a teacher pins a question', tests.try(format($$update lesson_questions set is_pinned = true where id = %L$$, q1)) = 1);
+  perform tests.check('P16: replies cannot be pinned or marked answered', tests.try(format($$update lesson_questions set is_pinned = true where id = %L$$, rep)) = -1 and tests.try(format($$update lesson_questions set is_resolved = true where id = %L$$, rep)) = -1);
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: another teacher cannot pin or change anything', tests.try(format($$update lesson_questions set is_pinned = false where id = %L$$, q1)) = 0);
+
+  -- ---- deleting ----
+  perform tests.su(); perform tests.as_user(sb);
+  perform tests.check('SECURITY: a classmate cannot delete someone else''s post', tests.try(format($$delete from lesson_questions where id = %L$$, q1)) = 0 and tests.try(format($$delete from lesson_questions where id = %L$$, rep)) = 0);
+  perform tests.check('P16: authors can delete their own reply', tests.try(format($$delete from lesson_questions where id = %L$$, rep2)) = 1);
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: another teacher cannot delete', tests.try('delete from lesson_questions') = 0);
+
+  -- ---- reading a thread ----
+  perform tests.su(); perform tests.as_user(sb);
+  select count(*) as n, count(*) filter (where author_is_staff) as staff, count(*) filter (where mine) as mine into r from lesson_thread(l1);
+  perform tests.check('P16: lesson_thread returns names, who is staff and which posts are mine', r.n = 4 and r.staff = 1 and r.mine = 1 and exists (select 1 from lesson_thread(l1) where author_name = 'P16 Teacher' and author_is_staff));
+  perform tests.check('SECURITY: lesson_thread never exposes emails', not exists (select 1 from information_schema.columns where table_name = 'lesson_thread') and (select count(*) from lesson_thread(l1) t where to_jsonb(t)::text like '%@%') = 0);
+  perform tests.check('SECURITY: lesson_thread is refused for draft, locked and foreign lessons', tests.try(format($$select * from lesson_thread(%L)$$, l2)) = -1 and tests.try(format($$select * from lesson_thread(%L)$$, l3)) = -1 and tests.try(format($$select * from lesson_thread(%L)$$, lo)) = -1);
+  perform tests.su(); perform tests.as_user(sx);
+  perform tests.check('SECURITY: lesson_thread is refused for students who are not enrolled', tests.try(format($$select * from lesson_thread(%L)$$, l1)) = -1);
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: and for other teachers', tests.try(format($$select * from lesson_thread(%L)$$, l1)) = -1);
+  perform tests.su(); perform tests.as_user(ta);
+  perform tests.check('P16: staff can read the thread of a draft lesson', tests.try(format($$select * from lesson_thread(%L)$$, l2)) >= 0);
+  perform tests.su(); perform tests.as_anon();
+  perform tests.check('SECURITY: anonymous cannot call lesson_thread or open_questions', tests.try(format($$select * from lesson_thread(%L)$$, l1)) = -1 and tests.try('select * from open_questions()') = -1);
+
+  -- ---- unlocking opens the locked lesson's questions ----
+  perform tests.su(); perform tests.as_user(sb);
+  insert into lesson_progress(lesson_id, student_id, completed) values (l1, sb, true);
+  perform tests.check('P16: once a lesson is unlocked its questions open up', tests.try(format($$insert into lesson_questions(lesson_id, body) values (%L, 'Now unlocked')$$, l3)) = 1 and tests.try(format($$select * from lesson_thread(%L)$$, l3)) >= 0);
+
+  -- ---- the teacher's queue ----
+  perform tests.su(); perform tests.as_user(ta);
+  perform tests.check('P16: open_questions lists only unanswered questions, with names and lesson titles', (select count(*) from open_questions()) = 2 and exists (select 1 from open_questions() where lesson_title = 'Video lesson' and author_name = 'P16 SA') and not exists (select 1 from open_questions() where id = q1));
+  perform tests.check('P16: open_questions can be limited to one course', (select count(*) from open_questions(cid)) = 2 and tests.try(format($$select * from open_questions(%L)$$, cid2)) = -1);
+  perform tests.su(); perform tests.as_user(ad);
+  perform tests.check('P16: admin sees the queue too', (select count(*) from open_questions()) = 2);
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: another teacher sees none of my queue', (select count(*) from open_questions()) = 0 and tests.try(format($$select * from open_questions(%L)$$, cid)) = -1);
+  perform tests.su(); perform tests.as_user(sa);
+  perform tests.check('SECURITY: students cannot use the queue', tests.try('select * from open_questions()') = -1);
+
+  -- ---- slow down floods ----
+  perform tests.su(); perform tests.as_user(sc);
+  for i in 1..20 loop insert into lesson_questions(lesson_id, body) values (l1, 'Flood ' || i); end loop;
+  perform tests.check('P16: 20 posts in an hour is fine, the 21st is refused', tests.try(format($$insert into lesson_questions(lesson_id, body) values (%L, 'One too many')$$, l1)) = -1);
+
+  -- ---- clean-up ----
+  perform tests.su();
+  delete from lessons where id = l1;
+  perform tests.check('P16: deleting a lesson deletes its questions', (select count(*) from lesson_questions where lesson_id = l1) = 0);
+end $t14$;
+
+-- =====================================================================
+-- Phase 17: live pulse and quick polls
+-- =====================================================================
+do $t15$
+declare
+  ta uuid := '00000000-0000-0000-0000-0000000017a1'; tb uuid := '00000000-0000-0000-0000-0000000017a2'; ad uuid := '00000000-0000-0000-0000-0000000017a0';
+  sa uuid := '00000000-0000-0000-0000-0000000017b1'; sb uuid := '00000000-0000-0000-0000-0000000017b2'; sc uuid := '00000000-0000-0000-0000-0000000017b3'; sx uuid := '00000000-0000-0000-0000-0000000017b4';
+  cid uuid; cid2 uuid; lc uuid; lc_future uuid; lc_cancel uuid; lc_past uuid; lc_other uuid; p1 uuid; p2 uuid; p_future uuid; i int; r record;
+begin
+  insert into auth.users(id, email, raw_user_meta_data, raw_app_meta_data) values
+    (ta,'p17ta@x.test','{"full_name":"P17 TA"}','{"role":"teacher"}'), (tb,'p17tb@x.test','{"full_name":"P17 TB"}','{"role":"teacher"}'), (ad,'p17ad@x.test','{"full_name":"P17 Admin"}','{"role":"admin"}'),
+    (sa,'p17sa@x.test','{"full_name":"P17 SA"}','{}'), (sb,'p17sb@x.test','{"full_name":"P17 SB"}','{}'), (sc,'p17sc@x.test','{"full_name":"P17 SC"}','{}'), (sx,'p17sx@x.test','{"full_name":"P17 SX"}','{}');
+  insert into courses(title, created_by, status) values ('P17 Course', ta, 'published') returning id into cid;
+  insert into courses(title, created_by, status) values ('P17 Other', tb, 'published') returning id into cid2;
+  insert into enrollments(course_id, student_id) values (cid, sa), (cid, sb), (cid, sc), (cid2, sx);
+  insert into live_classes(course_id,title,starts_at,ends_at) values (cid,'On now', now() - interval '10 minutes', now() + interval '50 minutes') returning id into lc;
+  insert into live_classes(course_id,title,starts_at,ends_at) values (cid,'Next week', now() + interval '3 days', now() + interval '3 days 1 hour') returning id into lc_future;
+  insert into live_classes(course_id,title,starts_at,ends_at,status) values (cid,'Cancelled', now() - interval '10 minutes', now() + interval '50 minutes','cancelled') returning id into lc_cancel;
+  insert into live_classes(course_id,title,starts_at,ends_at) values (cid,'Long over', now() - interval '5 hours', now() - interval '4 hours') returning id into lc_past;
+  insert into live_classes(course_id,title,starts_at,ends_at) values (cid2,'Other course', now() - interval '10 minutes', now() + interval '50 minutes') returning id into lc_other;
+
+  -- ---- pulse ----
+  perform tests.as_user(sa);
+  perform tests.check('P17: a student sends "I''m lost" during the class', tests.try(format($$insert into live_pulse(live_class_id, state) values (%L, 'lost')$$, lc)) = 1);
+  perform tests.check('P17: and changes it to "Got it" (upsert)', tests.try(format($$insert into live_pulse(live_class_id, state) values (%L, 'got_it') on conflict (live_class_id, student_id) do update set state = excluded.state$$, lc)) = 1);
+  perform tests.check('P17: the pulse now says Got it, and there is still only one row', (select state from live_pulse where live_class_id = lc) = 'got_it' and (select count(*) from live_pulse where live_class_id = lc) = 1);
+  perform tests.check('P17: the pulse takes its course from the class', (select course_id from live_pulse where live_class_id = lc) = cid);
+  perform tests.check('P17: only the two known states are accepted', tests.try(format($$update live_pulse set state = 'bored' where live_class_id = %L$$, lc)) = -1);
+  perform tests.check('SECURITY: no pulse before the window, after it, or for a cancelled class', tests.try(format($$insert into live_pulse(live_class_id, state) values (%L, 'lost')$$, lc_future)) = -1 and tests.try(format($$insert into live_pulse(live_class_id, state) values (%L, 'lost')$$, lc_past)) = -1 and tests.try(format($$insert into live_pulse(live_class_id, state) values (%L, 'lost')$$, lc_cancel)) = -1);
+  perform tests.check('SECURITY: no pulse for a class of another course', tests.try(format($$insert into live_pulse(live_class_id, state) values (%L, 'lost')$$, lc_other)) = -1);
+  perform tests.check('SECURITY: nobody can send a pulse for someone else', tests.try(format($$insert into live_pulse(live_class_id, student_id, state) values (%L, %L, 'lost')$$, lc, sb)) = -1);
+  perform tests.su(); perform tests.as_user(sx);
+  perform tests.check('SECURITY: a student of another course cannot send a pulse here', tests.try(format($$insert into live_pulse(live_class_id, state) values (%L, 'lost')$$, lc)) = -1);
+  perform tests.su(); perform tests.as_user(sb);
+  insert into live_pulse(live_class_id, state) values (lc, 'lost');
+  perform tests.su(); perform tests.as_user(sc);
+  insert into live_pulse(live_class_id, state) values (lc, 'lost');
+  perform tests.check('P17: a student sees only their own pulse', (select count(*) from live_pulse) = 1);
+  perform tests.check('SECURITY: a student cannot change or delete another student''s pulse', tests.try(format($$update live_pulse set state = 'got_it' where student_id = %L$$, sa)) = 0 and tests.try(format($$delete from live_pulse where student_id = %L$$, sa)) = 0);
+  perform tests.su(); perform tests.as_user(ta);
+  perform tests.check('SECURITY: the teacher cannot read who sent what (counts only)', (select count(*) from live_pulse) = 0);
+
+  -- ---- the teacher's numbers ----
+  select * into r from pulse_summary(lc);
+  perform tests.check('P17: pulse_summary counts Got it, I''m lost and the enrolled students', r.got_it = 1 and r.lost = 2 and r.enrolled = 3);
+  perform tests.su();
+  set local session_replication_role = replica;
+  update live_pulse set updated_at = now() - interval '10 minutes' where student_id = sb;
+  set local session_replication_role = origin;
+  perform tests.as_user(ta);
+  perform tests.check('P17: a tap fades after 5 minutes', (select lost from pulse_summary(lc)) = 1 and (select got_it from pulse_summary(lc)) = 1);
+  perform tests.su(); perform tests.as_user(ad);
+  perform tests.check('P17: admin can see the numbers', (select enrolled from pulse_summary(lc)) = 3);
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: another teacher cannot see the numbers', tests.try(format($$select * from pulse_summary(%L)$$, lc)) = -1);
+  perform tests.su(); perform tests.as_user(sa);
+  perform tests.check('SECURITY: a student cannot see the numbers', tests.try(format($$select * from pulse_summary(%L)$$, lc)) = -1);
+  perform tests.check('P17: a student can clear their own pulse', tests.try(format($$delete from live_pulse where live_class_id = %L$$, lc)) = 1);
+  perform tests.su(); perform tests.as_anon();
+  perform tests.check('SECURITY: anonymous cannot use pulse or the numbers', tests.try('select * from live_pulse') = -1 and tests.try(format($$select * from pulse_summary(%L)$$, lc)) = -1);
+
+  -- ---- polls ----
+  perform tests.su(); perform tests.as_user(ta);
+  insert into live_polls(live_class_id, question, options) values (lc, '  Which method?  ', array[' Substitution ', 'Elimination', 'Graph']) returning id into p1;
+  select * into r from live_polls where id = p1;
+  perform tests.check('P17: a teacher starts a poll; text is trimmed and it starts open', r.question = 'Which method?' and r.options = array['Substitution', 'Elimination', 'Graph'] and r.status = 'open' and r.course_id = cid);
+  perform tests.check('P17: a poll needs 2 to 6 answers, each 1 to 80 characters, and a question', tests.try(format($$insert into live_polls(live_class_id, question, options) values (%L, 'Q', array['only one'])$$, lc)) = -1
+    and tests.try(format($$insert into live_polls(live_class_id, question, options) values (%L, 'Q', array['1','2','3','4','5','6','7'])$$, lc)) = -1
+    and tests.try(format($$insert into live_polls(live_class_id, question, options) values (%L, 'Q', array['ok','   '])$$, lc)) = -1
+    and tests.try(format($$insert into live_polls(live_class_id, question, options) values (%L, 'Q', array['ok', %L])$$, lc, repeat('x', 81))) = -1
+    and tests.try(format($$insert into live_polls(live_class_id, question, options) values (%L, '  ', array['a','b'])$$, lc)) = -1);
+  perform tests.check('SECURITY: a poll cannot be edited once created', tests.try(format($$update live_polls set question = 'Changed' where id = %L$$, p1)) = -1 and tests.try(format($$update live_polls set options = array['x','y'] where id = %L$$, p1)) = -1);
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: another teacher cannot start or see polls of my class', tests.try(format($$insert into live_polls(live_class_id, question, options) values (%L, 'Q', array['a','b'])$$, lc)) = -1 and (select count(*) from live_polls) = 0);
+  perform tests.su(); perform tests.as_user(sa);
+  perform tests.check('SECURITY: a student cannot create, close or delete polls', tests.try(format($$insert into live_polls(live_class_id, question, options) values (%L, 'Q', array['a','b'])$$, lc)) = -1 and tests.try(format($$update live_polls set status = 'closed' where id = %L$$, p1)) = 0 and tests.try('delete from live_polls') = 0);
+  perform tests.check('P17: enrolled students see the poll', (select count(*) from live_polls) = 1);
+  perform tests.su(); perform tests.as_user(sx);
+  perform tests.check('SECURITY: students of other courses do not see it', (select count(*) from live_polls) = 0);
+
+  -- ---- voting ----
+  perform tests.su(); perform tests.as_user(sa);
+  perform tests.check('SECURITY: results stay hidden until you have voted', tests.try(format($$select * from poll_results(%L)$$, p1)) = -1);
+  perform tests.check('P17: a student votes', tests.try(format($$insert into live_poll_votes(poll_id, option_idx) values (%L, 1)$$, p1)) = 1);
+  perform tests.check('P17: and may change their mind while the poll is open', tests.try(format($$update live_poll_votes set option_idx = 2 where poll_id = %L$$, p1)) = 1);
+  perform tests.check('P17: the vote now says answer 3', (select option_idx from live_poll_votes where poll_id = p1) = 2);
+  perform tests.check('SECURITY: one vote each (a second insert is refused)', tests.try(format($$insert into live_poll_votes(poll_id, option_idx) values (%L, 0)$$, p1)) = -1);
+  perform tests.check('SECURITY: an answer that does not exist is refused', tests.try(format($$update live_poll_votes set option_idx = 5 where poll_id = %L$$, p1)) = -1);
+  perform tests.check('SECURITY: nobody can vote for someone else', tests.try(format($$insert into live_poll_votes(poll_id, student_id, option_idx) values (%L, %L, 0)$$, p1, sb)) = -1);
+  perform tests.su(); perform tests.as_user(sb);
+  insert into live_poll_votes(poll_id, option_idx) values (p1, 2);
+  perform tests.su(); perform tests.as_user(sc);
+  insert into live_poll_votes(poll_id, option_idx) values (p1, 0);
+  perform tests.check('P17: a student sees only their own vote', (select count(*) from live_poll_votes) = 1);
+  perform tests.su(); perform tests.as_user(sx);
+  perform tests.check('SECURITY: a student of another course cannot vote here', tests.try(format($$insert into live_poll_votes(poll_id, option_idx) values (%L, 0)$$, p1)) = -1 and tests.try(format($$select * from poll_results(%L)$$, p1)) = -1);
+  perform tests.su(); perform tests.as_user(ta);
+  perform tests.check('SECURITY: the teacher cannot read individual votes', (select count(*) from live_poll_votes) = 0);
+  select count(*) as n, sum(votes) filter (where option_idx = 2) as graph, sum(votes) filter (where option_idx = 0) as sub, max(total) as total into r from poll_results(p1);
+  perform tests.check('P17: poll_results gives totals per answer, with labels', r.n = 3 and r.graph = 2 and r.sub = 1 and r.total = 3 and exists (select 1 from poll_results(p1) where label = 'Elimination' and votes = 0));
+  perform tests.su(); perform tests.as_user(tb);
+  perform tests.check('SECURITY: another teacher cannot read the results', tests.try(format($$select * from poll_results(%L)$$, p1)) = -1);
+  perform tests.su(); perform tests.as_user(sa);
+  perform tests.check('P17: a student who has voted can see the totals', (select max(total) from poll_results(p1)) = 3);
+  perform tests.su(); perform tests.as_user(ta);
+  perform tests.check('P17: a teacher closes the poll', tests.try(format($$update live_polls set status = 'closed' where id = %L$$, p1)) = 1);
+  perform tests.su(); perform tests.as_user(sa);
+  perform tests.check('SECURITY: a closed poll takes no more votes or changes', tests.try(format($$update live_poll_votes set option_idx = 0 where poll_id = %L$$, p1)) = -1);
+  perform tests.su(); perform tests.as_user(ta);
+  insert into live_polls(live_class_id, question, options) values (lc, 'Second', array['A','B']) returning id into p2;
+  update live_polls set status = 'closed' where id = p2;
+  perform tests.su(); perform tests.as_user(sb);
+  perform tests.check('P17: totals of a closed poll are open to every enrolled student, even one who did not vote', (select max(total) from poll_results(p2)) = 0);
+  perform tests.su(); perform tests.as_anon();
+  perform tests.check('SECURITY: anonymous cannot use polls', tests.try('select * from live_polls') = -1 and tests.try(format($$select * from poll_results(%L)$$, p1)) = -1);
+
+  -- ---- outside the class window ----
+  perform tests.su();
+  insert into live_polls(live_class_id, question, options) values (lc_future, 'Future poll', array['A','B']) returning id into p_future;
+  perform tests.as_user(sa);
+  perform tests.check('SECURITY: no voting on a poll of a class that is not on', tests.try(format($$insert into live_poll_votes(poll_id, option_idx) values (%L, 0)$$, p_future)) = -1);
+
+  -- ---- the 20-poll limit ----
+  perform tests.su(); perform tests.as_user(ta);
+  for i in 1..17 loop insert into live_polls(live_class_id, question, options) values (lc, 'Filler ' || i, array['a','b']); end loop;
+  perform tests.check('P17: 20 polls per class is the limit', (select count(*) from live_polls where live_class_id = lc) = 19 and tests.try(format($$insert into live_polls(live_class_id, question, options) values (%L, 'n20', array['a','b'])$$, lc)) = 1 and tests.try(format($$insert into live_polls(live_class_id, question, options) values (%L, 'n21', array['a','b'])$$, lc)) = -1);
+
+  -- ---- clean-up ----
+  perform tests.su();
+  delete from live_classes where id = lc;
+  perform tests.check('P17: deleting a class deletes its pulse, polls and votes', (select count(*) from live_pulse where live_class_id = lc) = 0 and (select count(*) from live_polls where live_class_id = lc) = 0 and (select count(*) from live_poll_votes where poll_id = p1) = 0);
+end $t15$;
+
 select n, case when ok then 'PASS' else 'FAIL' end as result, name from tests.results order by n;
 select count(*) filter (where ok) as passed, count(*) filter (where not ok) as failed from tests.results;

@@ -10,6 +10,9 @@ import * as courses from '../services/courses.js';
 import * as contentApi from '../services/content.js';
 import { renderContent } from './course-content.js';
 import { renderLive } from './course-live.js';
+import { renderTopics } from './course-topics.js';
+import * as mastery from '../services/mastery.js';
+import { masteryCards } from '../ui/mastery-ui.js';
 import { renderAttendance } from './course-attendance.js';
 import { renderAssignments } from './course-assignments.js';
 import { renderQuizzes } from './course-quizzes.js';
@@ -32,7 +35,7 @@ async function init() {
   if (!course) return notFound();
   canManage = isAdmin || (course.course_teachers ?? []).some((t) => t.teacher_id === me.id);
   const startTab = param('tab');
-  if (['content', 'live', 'attendance', 'assignments', 'quizzes'].includes(startTab)) { tab = startTab; if (startTab === 'attendance' && /^[0-9a-f-]{36}$/i.test(param('live') ?? '')) attCtx.openLive = param('live'); }
+  if (['content', 'live', 'attendance', 'assignments', 'quizzes', 'topics', 'mastery'].includes(startTab)) { tab = startTab; if (startTab === 'attendance' && /^[0-9a-f-]{36}$/i.test(param('live') ?? '')) attCtx.openLive = param('live'); }
   document.title = `${course.title} · Rinova Learn`;
   document.getElementById('page-title').textContent = 'Course';
   render();
@@ -42,7 +45,7 @@ const teacherNames = () => (course.course_teachers ?? []).sort((x, y) => y.is_le
 const gradeOf = (t = '') => [...t].reduce((n, ch) => n + ch.charCodeAt(0), 0) % 4;
 
 function render() {
-  const tabs = canManage ? [['overview', 'Overview'], ['content', 'Content'], ['live', 'Live classes'], ['assignments', 'Assignments'], ['quizzes', 'Quizzes'], ['attendance', 'Attendance'], ['students', 'Students'], ['teachers', 'Teachers']] : [['overview', 'Overview'], ['content', 'Lessons'], ['live', 'Live classes'], ['assignments', 'Assignments'], ['quizzes', 'Quizzes'], ['attendance', 'Attendance']];
+  const tabs = canManage ? [['overview', 'Overview'], ['content', 'Content'], ['live', 'Live classes'], ['assignments', 'Assignments'], ['quizzes', 'Quizzes'], ['topics', 'Topics'], ['attendance', 'Attendance'], ['students', 'Students'], ['teachers', 'Teachers']] : [['overview', 'Overview'], ['content', 'Lessons'], ['live', 'Live classes'], ['assignments', 'Assignments'], ['quizzes', 'Quizzes'], ['mastery', 'My mastery'], ['attendance', 'Attendance']];
   content.innerHTML = html`${raw(back)}
     <header class="course-top" data-g="${gradeOf(course.title)}"><div class="course-top-main">
       <div class="course-top-thumb thumb" data-initials="${initials(course.title)}" data-g="${gradeOf(course.title)}">${raw(courses.thumbUrl(course.thumbnail_path) ? `<img src="${courses.thumbUrl(course.thumbnail_path)}" alt="">` : html`${initials(course.title)}`)}</div>
@@ -55,10 +58,15 @@ function render() {
   content.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab; render(); }));
   content.querySelector('#edit')?.addEventListener('click', editCourse);
   content.querySelector('#del')?.addEventListener('click', removeCourse);
-  ({ overview, content: contentTab, live: liveTab, assignments: asgTab, quizzes: quizTab, attendance: attTab, students, teachers }[tab])(content.querySelector('#pane'));
+  ({ overview, content: contentTab, live: liveTab, assignments: asgTab, quizzes: quizTab, topics: topicsTab, mastery: masteryTab, attendance: attTab, students, teachers }[tab])(content.querySelector('#pane'));
 }
 
 const attCtx = {};
+const topicsTab = (pane) => renderTopics(pane, { course });
+const masteryTab = async (pane) => {
+  pane.innerHTML = skeletonRows(3);
+  try { const rows = await mastery.myMastery(course.id); pane.innerHTML = rows.length ? masteryCards(rows).toString() : emptyState('No topics yet', 'Your teacher has not set up topics for this course yet.'); } catch (e) { console.error(e); pane.innerHTML = errorState(e.message); }
+};
 const quizTab = (pane) => renderQuizzes(pane, { course, me, role, canManage });
 const asgTab = (pane) => renderAssignments(pane, { course, me, role, canManage });
 const liveTab = (pane) => renderLive(pane, { course, me, role, canManage });
