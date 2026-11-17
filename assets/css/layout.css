@@ -384,3 +384,75 @@ button.popt:focus-visible { outline: 2px solid var(--brand-600); outline-offset:
 /* small screens: rows with a long title and a button wrap instead of pushing the page sideways */
 .list-item > * { min-width: 0; }
 @media (max-width: 640px) { .list-item { flex-wrap: wrap; } .list-item > div:first-child { flex: 1 1 12rem; overflow-wrap: anywhere; } }
+
+/* ======================================================================
+   Fits every screen: phones, tablets, laptops, large and ultra-wide monitors,
+   landscape phones, notched phones, touch and mouse.
+   ====================================================================== */
+html { font-size: clamp(16px, 0.35vw + 11.5px, 19px); }                  /* 16px up to 1280px wide, then grows gently to 19px */
+:root { --content-max: clamp(1200px, 80vw, 1640px); --sidebar-w: clamp(232px, 15vw, 290px); }
+h1 { font-size: clamp(1.5rem, 1.15rem + 1.1vw, 2.25rem); }
+h2 { font-size: clamp(1.25rem, 1.05rem + .6vw, 1.625rem); }
+.content { padding-left: max(var(--sp-5), env(safe-area-inset-left)); padding-right: max(var(--sp-5), env(safe-area-inset-right)); padding-bottom: max(var(--sp-8), calc(var(--sp-6) + env(safe-area-inset-bottom))); }
+.topbar { padding-left: max(var(--sp-5), env(safe-area-inset-left)); padding-right: max(var(--sp-5), env(safe-area-inset-right)); }
+.toast-region { bottom: max(var(--sp-4), env(safe-area-inset-bottom)); right: max(var(--sp-4), env(safe-area-inset-right)); }
+
+/* full-height areas follow the visible screen on phones (the address bar comes and goes) */
+@supports (height: 100dvh) {
+  .app, .center-page { min-height: 100dvh; }
+  .sidebar { height: 100dvh; }
+  .modal { max-height: 90dvh; }
+}
+.sidebar { overflow-y: auto; overscroll-behavior: contain; padding-bottom: max(var(--sp-4), env(safe-area-inset-bottom)); }
+
+/* big grids use the space on large screens, and never get cramped on small ones */
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+@media (min-width: 1500px) { .course-grid, .mgrid, .plan-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); } }
+
+/* tablets: the menu stays a slide-in drawer up to 1024 so the content gets the room */
+@media (max-width: 1024px) and (min-width: 861px) { :root { --sidebar-w: 216px; } .content { padding-left: var(--sp-4); padding-right: var(--sp-4); } }
+@media (max-width: 860px) {
+  .topbar { padding-left: max(var(--sp-3), env(safe-area-inset-left)); padding-right: max(var(--sp-3), env(safe-area-inset-right)); }
+  .content { padding-left: max(var(--sp-4), env(safe-area-inset-left)); padding-right: max(var(--sp-4), env(safe-area-inset-right)); }
+  .page-head { align-items: stretch; }
+  .page-head > .row, .page-head > .actions { flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+  .page-head .btn { flex: 1 1 auto; }
+  .modal-actions { flex-wrap: wrap; } .modal-actions .btn { flex: 1 1 8rem; }
+  .tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; } .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; white-space: nowrap; }
+}
+@media (max-width: 360px) { html { font-size: 15px; } .content { padding-left: var(--sp-3); padding-right: var(--sp-3); } }
+
+/* landscape phones and other short screens */
+@media (max-height: 520px) {
+  :root { --topbar-h: 48px; }
+  .modal-backdrop { align-items: start; padding: var(--sp-2); } .modal { max-height: calc(100dvh - 1rem); }
+  .sidebar .nav-link, .sidebar a { padding-top: 6px; padding-bottom: 6px; }
+}
+
+/* touch screens: comfortable tap targets (about 44px) */
+@media (pointer: coarse) {
+  .btn, .btn-sm { min-height: 44px; } .btn-sm { padding-left: var(--sp-4); padding-right: var(--sp-4); }
+  .input, .select, .textarea { min-height: 44px; font-size: max(16px, 1rem); }      /* 16px stops iOS zooming into fields */
+  .tab { min-height: 44px; display: inline-flex; align-items: center; }
+  .sidebar a { min-height: 44px; }
+  .menu-btn, .icon-btn, .topbar button { min-width: 44px; min-height: 44px; }
+  input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+}
+
+/* wide tables scroll inside their own box, with a soft edge that shows there is more */
+.table-wrap { max-width: 100%; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+  background: linear-gradient(to right, var(--surface) 30%, transparent), linear-gradient(to left, var(--surface) 30%, transparent), linear-gradient(to right, rgba(16,24,40,.12), transparent), linear-gradient(to left, rgba(16,24,40,.12), transparent);
+  background-position: left center, right center, left center, right center; background-repeat: no-repeat; background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%; background-attachment: local, local, scroll, scroll; }
+.table td, .table th { overflow-wrap: anywhere; } .table th { white-space: nowrap; }
+
+/* media never overflows its box */
+img, video, iframe, canvas, svg { max-width: 100%; } .player iframe, .player video { width: 100%; }
+pre, code { overflow-wrap: anywhere; } pre { overflow-x: auto; }
+
+/* people who prefer larger text or high zoom: let rows wrap instead of clipping */
+.row { flex-wrap: wrap; } .page-head h1, .card h3 { overflow-wrap: anywhere; }
