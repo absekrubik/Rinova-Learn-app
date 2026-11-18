@@ -1,4 +1,7 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
+import { initSplash } from '../ui/splash.js';
+import { playTransition } from '../ui/transition.js';
+initSplash();
 
 const $ = (id) => document.getElementById(id);
 $('yr').textContent = new Date().getFullYear();
@@ -15,4 +18,12 @@ if (!configured) {
       for (const id of ['signin', 'signin-top', 'signin2']) { const a = $(id); a.textContent = 'Open dashboard'; a.href = roleHomeUrl(me.role); }
     }
   } catch { /* stay on the plain Sign in links */ }
+}
+
+// Clicking Sign in plays a short transition before the login page opens (not for the "Open dashboard" state).
+for (const id of ['signin', 'signin-top', 'signin2']) {
+  document.getElementById(id)?.addEventListener('click', async (e) => {
+    const a = e.currentTarget; if (a.textContent.trim() === 'Open dashboard' || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+    e.preventDefault(); await playTransition({ title: 'Taking you to sign in', ms: 800 }); location.href = a.href;
+  });
 }

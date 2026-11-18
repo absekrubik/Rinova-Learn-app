@@ -34,7 +34,7 @@ async function load() {
         <td><span class="badge badge-blue" style="text-transform:capitalize">${u.role}</span></td>
         <td>${raw(u.status === 'active' ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Suspended</span>')}</td>
         <td>${formatDate(u.created_at)}</td>
-        <td style="text-align:right;white-space:nowrap">${raw(u.id === me.id ? '<span class="text-muted text-sm">You</span>' : `<button class="btn btn-ghost btn-sm" data-act="role">Change role</button><button class="btn btn-ghost btn-sm" data-act="status">${u.status === 'active' ? 'Suspend' : 'Reactivate'}</button>`)}</td></tr>`).join('')}</tbody></table></div>`;
+        <td style="text-align:right;white-space:nowrap">${raw(u.id === me.id ? '<span class="text-muted text-sm">You</span>' : `<button class="btn btn-ghost btn-sm" data-act="role">Change role</button><button class="btn btn-ghost btn-sm" data-act="password">Reset password</button><button class="btn btn-ghost btn-sm" data-act="status">${u.status === 'active' ? 'Suspend' : 'Reactivate'}</button>`)}</td></tr>`).join('')}</tbody></table></div>`;
     const pages = Math.max(1, Math.ceil(total / PAGE));
     $('#pager').innerHTML = html`<span class="text-muted text-sm">${total} user${total === 1 ? '' : 's'} · page ${state.page + 1} of ${pages}</span>
       <span class="row"><button class="btn btn-secondary btn-sm" id="prev" ${raw(state.page === 0 ? 'disabled' : '')}>Previous</button><button class="btn btn-secondary btn-sm" id="next" ${raw(state.page + 1 >= pages ? 'disabled' : '')}>Next</button></span>`;
@@ -42,7 +42,7 @@ async function load() {
     $('#next')?.addEventListener('click', () => { state.page++; load(); });
     const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
     $('#table').querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {
-      const u = byId[b.closest('tr').dataset.id]; (b.dataset.act === 'role' ? changeRole : toggleStatus)(u);
+      const u = byId[b.closest('tr').dataset.id]; ({ role: changeRole, password: resetPassword, status: toggleStatus })[b.dataset.act](u);
     }));
   } catch (e) { console.error(e); $('#table').innerHTML = errorState(e.message); }
 }
@@ -56,6 +56,25 @@ function changeRole(u) {
     { label: 'Save', variant: 'primary', onClick: async ({ close, el }) => {
       const role = el.querySelector('#nr').value; if (role === u.role) return close();
       try { await users.setRole(u.id, role); toastSuccess('Role updated'); close(); load(); } catch (e) { toastError(e.message); } } }] });
+}
+
+function resetPassword(u) {
+  const form = document.createElement('form'); form.noValidate = true;
+  form.innerHTML = html`<p>Set a new password for <strong>${u.full_name || u.email}</strong>. They can use it right away and change it from their profile page.</p>
+    <div class="field"><label for="rp-pw">New password</label><div class="row" style="flex-wrap:nowrap"><input class="input" id="rp-pw" name="password" type="text" autocomplete="off" required><button class="btn btn-secondary" type="button" id="rp-gen">Generate</button></div>
+      <span class="field-hint">At least 8 characters. Share it with them securely. It is not saved anywhere for you to look up later.</span></div>`;
+  form.querySelector('#rp-gen').addEventListener('click', () => { form.elements.password.value = genPassword(); });
+  const m = openModal({ title: 'Reset password', body: form, actions: [
+    { label: 'Cancel', onClick: ({ close }) => close() },
+    { label: 'Set password', variant: 'primary', onClick: async ({ el }) => {
+      clearErrors(form); const pw = form.elements.password.value;
+      if (pw.length < 8) return setFieldError(form.elements.password, 'Use at least 8 characters');
+      if (new TextEncoder().encode(pw).length > 72) return setFieldError(form.elements.password, 'That is too long (72 characters at most)');
+      await withBusy(el.querySelector('.modal-actions .btn-primary'), async () => {
+        try { await users.adminSetPassword(u.id, pw); toastSuccess(`Password changed for ${u.full_name || u.email}`); m.close(); } catch (e) { toastError(e.message); }
+      });
+    } }] });
+  form.addEventListener('submit', (e) => e.preventDefault());
 }
 
 async function toggleStatus(u) {

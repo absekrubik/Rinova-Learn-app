@@ -3,6 +3,8 @@ import { redirectIfSignedIn } from '../core/guard.js';
 import { SITE_ROOT, param, html } from '../core/utils.js';
 import { formData, setFieldError, clearErrors, withBusy, isEmail } from '../ui/form.js';
 import { requireClient } from '../core/supabase.js';
+import { playTransition } from '../ui/transition.js';
+const ROLE_LABEL = { admin: 'Administrator', teacher: 'Teacher', student: 'Student' };
 
 const form = document.getElementById('form'), notice = document.getElementById('notice');
 const say = (type, msg) => { notice.innerHTML = html`<div class="alert alert-${type}" role="alert" style="margin-bottom:var(--sp-4)">${msg}</div>`; };
@@ -31,7 +33,10 @@ form.addEventListener('submit', async (e) => {
       const me = await getProfile({ refresh: true });
       if (!me || me.status !== 'active') { say('error', 'Your account is suspended. Please contact an administrator.'); return; }
       const next = safeNext();
-      location.href = (next && next.startsWith(SITE_ROOT.origin + SITE_ROOT.pathname + me.role)) ? next : roleHomeUrl(me.role);
+      const first = String(me.full_name ?? '').trim().split(/\s+/)[0];
+      const target = (next && next.startsWith(SITE_ROOT.origin + SITE_ROOT.pathname + me.role)) ? next : roleHomeUrl(me.role);
+      await playTransition({ title: first ? 'Welcome back, ' : 'Welcome back', strong: first, sub: ROLE_LABEL[me.role] ?? '', ms: 1700 });
+      location.href = target;
     } catch (err) { say('error', FRIENDLY[err.message] ?? err.message); }
   });
 });

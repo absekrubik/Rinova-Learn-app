@@ -52,6 +52,7 @@ Install the Supabase CLI (<https://supabase.com/docs/guides/cli>), then:
 supabase login
 supabase link --project-ref YOUR_PROJECT_REF
 supabase functions deploy create-user
+supabase functions deploy admin-set-password
 supabase secrets set ALLOWED_ORIGIN=https://USER.github.io
 ```
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are injected into the function by Supabase automatically. The service key never touches the website.

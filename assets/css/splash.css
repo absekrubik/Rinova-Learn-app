@@ -1,0 +1,73 @@
+/* Opening splash: a short, calm brand animation shown once per visit. It hides itself with CSS alone, so it can never trap anyone. */
+.splash { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; overflow: hidden; color: #fff;
+  background: radial-gradient(120% 90% at 50% 0%, #1E62C9 0%, #0B3C95 45%, #072A6B 100%);
+  animation: splash-out .7s cubic-bezier(.7, 0, .2, 1) 2.9s forwards; }
+.no-splash .splash { display: none; }
+.splash[hidden] { display: none; }
+.splash-orb { position: absolute; border-radius: 50%; filter: blur(2px); opacity: 0; animation: orb-in .9s ease .1s forwards, orb-drift 6s ease-in-out infinite alternate; }
+.splash-orb.o1 { width: 46vmax; height: 46vmax; left: -14vmax; bottom: -18vmax; background: radial-gradient(circle at 35% 35%, rgba(58, 154, 47, .55), rgba(58, 154, 47, 0) 70%); }
+.splash-orb.o2 { width: 38vmax; height: 38vmax; right: -12vmax; top: -14vmax; background: radial-gradient(circle at 60% 60%, rgba(255, 255, 255, .22), rgba(255, 255, 255, 0) 70%); animation-delay: .25s, 0s; }
+.splash-orb.o3 { width: 22vmax; height: 22vmax; right: 8vmax; bottom: 6vmax; background: radial-gradient(circle at 50% 50%, rgba(247, 144, 9, .45), rgba(247, 144, 9, 0) 70%); animation-delay: .4s, 0s; }
+.splash-grid { position: absolute; inset: 0; opacity: .08; background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 44px 44px;
+  mask-image: radial-gradient(circle at 50% 50%, #000, transparent 70%); -webkit-mask-image: radial-gradient(circle at 50% 50%, #000, transparent 70%); animation: grid-in 1.2s ease .2s both; }
+
+.splash-center { position: relative; display: grid; justify-items: center; gap: 1.4rem; padding: 1rem; text-align: center; }
+.splash-mark { position: relative; width: clamp(112px, 22vmin, 168px); aspect-ratio: 1; display: grid; place-items: center; }
+.splash-badge { position: absolute; inset: 14%; border-radius: 28%; background: #fff; box-shadow: 0 18px 50px rgba(3, 18, 52, .45); transform: scale(.2) rotate(-18deg); opacity: 0; animation: badge-in .8s cubic-bezier(.2, 1.3, .3, 1) .25s forwards; }
+.splash-mark img { position: relative; width: 68%; height: 68%; object-fit: contain; transform: scale(.4); opacity: 0; animation: mark-in .7s cubic-bezier(.2, 1.4, .3, 1) .5s forwards, mark-float 3s ease-in-out 1.3s infinite; }
+.splash-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.splash-ring circle { fill: none; stroke-linecap: round; }
+.splash-ring .track { stroke: rgba(255, 255, 255, .18); stroke-width: 3; }
+.splash-ring .arc { stroke: #7BD36F; stroke-width: 3.5; stroke-dasharray: 289; stroke-dashoffset: 289; animation: ring-draw 1.9s cubic-bezier(.5, 0, .2, 1) .45s forwards; }
+.splash-pulse { position: absolute; inset: 14%; border-radius: 28%; border: 2px solid rgba(255, 255, 255, .55); opacity: 0; animation: pulse 1.6s ease-out 1s 2; }
+
+.splash-word { display: flex; gap: .04em; font-size: clamp(1.7rem, 5vmin, 2.5rem); font-weight: 700; letter-spacing: -.02em; line-height: 1; }
+.splash-word span { display: inline-block; opacity: 0; transform: translateY(.7em); animation: letter-up .55s cubic-bezier(.2, .9, .3, 1) forwards; animation-delay: calc(.95s + var(--i) * .045s); }
+.splash-word .sp { width: .28em; }
+.splash-word .g { color: #8BE07E; }
+.splash-tag { margin: 0; font-size: clamp(.9rem, 2.4vmin, 1.05rem); letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .8); opacity: 0; transform: translateY(8px); animation: letter-up .6s ease 1.75s forwards; }
+.splash-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255, 255, 255, .12); }
+.splash-bar i { display: block; height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #7BD36F, #F79009); animation: bar-fill 2.7s cubic-bezier(.4, 0, .2, 1) .1s forwards; }
+.splash-skip { position: absolute; right: max(1rem, env(safe-area-inset-right)); bottom: max(1.2rem, env(safe-area-inset-bottom)); background: rgba(255, 255, 255, .12); color: #fff; border: 1px solid rgba(255, 255, 255, .3); border-radius: 999px;
+  padding: .4rem .9rem; font: inherit; font-size: .8rem; cursor: pointer; opacity: 0; animation: letter-up .4s ease .8s forwards; }
+.splash-skip:hover, .splash-skip:focus-visible { background: rgba(255, 255, 255, .22); outline: 2px solid #fff; outline-offset: 2px; }
+
+.splash.is-leaving { animation: splash-out .45s cubic-bezier(.7, 0, .2, 1) forwards; }
+.splash.is-leaving .splash-center { animation: center-out .45s ease forwards; }
+
+@keyframes splash-out { 0% { opacity: 1; transform: none; visibility: visible; } 99% { visibility: visible; } 100% { opacity: 0; transform: scale(1.06); visibility: hidden; pointer-events: none; } }
+@keyframes center-out { to { opacity: 0; transform: translateY(-14px) scale(.96); } }
+@keyframes badge-in { to { transform: none; opacity: 1; } }
+@keyframes mark-in { to { transform: none; opacity: 1; } }
+@keyframes mark-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+@keyframes ring-draw { to { stroke-dashoffset: 0; } }
+@keyframes pulse { 0% { opacity: .7; transform: scale(1); } 100% { opacity: 0; transform: scale(1.55); } }
+@keyframes letter-up { to { opacity: 1; transform: none; } }
+@keyframes bar-fill { to { transform: scaleX(1); } }
+@keyframes orb-in { to { opacity: 1; } }
+@keyframes orb-drift { from { translate: 0 0; } to { translate: 3vmax -2vmax; } }
+@keyframes grid-in { from { opacity: 0; } to { opacity: .08; } }
+
+/* people who ask their device for less motion get no splash at all */
+@media (prefers-reduced-motion: reduce) { .splash { display: none; } }
+
+/* Short transitions: leaving the landing page for Sign in, and the welcome after a successful sign-in. */
+.rl-trans { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; color: #fff; text-align: center; padding: 1rem;
+  background: radial-gradient(120% 90% at 50% 0%, #1E62C9 0%, #0B3C95 45%, #072A6B 100%); opacity: 0; clip-path: circle(0% at 50% 50%);
+  animation: trans-in .55s cubic-bezier(.6, 0, .2, 1) forwards; }
+.rl-trans .orb { position: absolute; width: 40vmax; height: 40vmax; border-radius: 50%; left: -12vmax; bottom: -16vmax; background: radial-gradient(circle, rgba(58, 154, 47, .5), rgba(58, 154, 47, 0) 70%); }
+.rl-trans .orb.b { left: auto; bottom: auto; right: -10vmax; top: -12vmax; background: radial-gradient(circle, rgba(247, 144, 9, .35), rgba(247, 144, 9, 0) 70%); }
+.rl-trans-in { position: relative; display: grid; justify-items: center; gap: .9rem; }
+.rl-trans .splash-mark { width: clamp(88px, 16vmin, 124px); }
+.rl-trans .splash-badge { animation-delay: .2s; } .rl-trans .splash-mark img { animation-delay: .4s, 1.2s; } .rl-trans .splash-ring .arc { animation-duration: 1.1s; animation-delay: .3s; }
+.rl-trans h2 { margin: 0; font-size: clamp(1.5rem, 4.6vmin, 2.2rem); letter-spacing: -.02em; color: #fff; opacity: 0; transform: translateY(.6em); animation: letter-up .5s cubic-bezier(.2, .9, .3, 1) .55s forwards; }
+.rl-trans h2 b { color: #8BE07E; font-weight: 700; }
+.rl-trans p { margin: 0; color: rgba(255, 255, 255, .8); letter-spacing: .06em; text-transform: uppercase; font-size: .9rem; opacity: 0; animation: letter-up .5s ease .8s forwards; }
+.rl-trans .dots { display: flex; gap: 6px; margin-top: .3rem; opacity: 0; animation: letter-up .4s ease .9s forwards; }
+.rl-trans .dots i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: dot 1s ease-in-out infinite; }
+.rl-trans .dots i:nth-child(2) { animation-delay: .15s; } .rl-trans .dots i:nth-child(3) { animation-delay: .3s; }
+.rl-trans.is-out { animation: trans-out .35s ease forwards; }
+@keyframes trans-in { to { opacity: 1; clip-path: circle(150% at 50% 50%); } }
+@keyframes trans-out { to { opacity: 0; } }
+@keyframes dot { 0%, 100% { opacity: .3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-5px); } }
+@media (prefers-reduced-motion: reduce) { .rl-trans { animation-duration: .01s; } .rl-trans * { animation-duration: .01s !important; animation-delay: 0s !important; } }

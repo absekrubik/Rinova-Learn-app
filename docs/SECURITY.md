@@ -13,7 +13,7 @@
 | Triggers | Check sizes and ownership on every write: course cannot change on an assignment, attempts lock a quiz, 20 messages per minute per person. |
 | Output escaping | Every piece of user text goes through an escaping template or `textContent`, so `<script>` in a title is shown as text. |
 | CSP meta tag | Blocks inline scripts, eval, unknown script hosts and unknown connections. |
-| Keys | Only the publishable key is in the browser. The site stops if a secret key is pasted into `js/config.js`. The `service_role` key lives only inside the `create-user` Edge Function. |
+| Keys | Only the publishable key is in the browser. The site stops if a secret key is pasted into `js/config.js`. The `service_role` key lives only inside the `create-user` and `admin-set-password` Edge Functions. |
 | Admin-created teachers | Only admins can create teacher accounts; the function re-checks the caller's role. |
 | Spreadsheet exports | CSV cells beginning with `=`, `+`, `-` or `@` are neutralised. |
 
@@ -39,3 +39,8 @@
 ## Presence (migration 020)
 - `live_sessions` has no direct write access. Visits are written only by `record_join`, `live_heartbeat` and `record_leave`; people read only their own visits, and staff read names and times through `live_joined()`.
 - To notice a closed meeting tab, the page keeps a handle on the window it opened, but only for `meet.jit.si` and `meet.google.com`. Every other meeting link still opens with `noopener`.
+
+## Admin password reset
+- `admin-set-password` checks the caller's sign-in token, then checks in the database that the caller is an active admin, before it touches anything. The browser never holds the service key.
+- The new password is sent over HTTPS to the function, applied through Supabase Auth, and never stored or logged. The audit log records who reset whose password and when (action `reset_password`), not the password.
+- Passwords must be 8 to 72 characters. The 72-byte limit is the most Supabase Auth accepts.

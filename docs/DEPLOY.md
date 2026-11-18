@@ -3,7 +3,7 @@
 The site is static files. Nothing to build or install. Two places are involved: **Supabase** (database, sign-in, files) and **GitHub Pages** (hosting).
 
 ## 1. Supabase (once)
-Follow `supabase/README.md` from top to bottom: create the project, run migrations `001` to `020` in order, set the Auth URLs, make yourself the first admin, deploy the `create-user` function.
+Follow `supabase/README.md` from top to bottom: create the project, run migrations `001` to `020` in order, set the Auth URLs, make yourself the first admin, deploy the `create-user` and `admin-set-password` functions.
 
 ## 2. Connect the website
 Open `js/config.js` and set:

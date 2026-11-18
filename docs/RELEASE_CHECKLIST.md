@@ -10,7 +10,8 @@ Tick every box on the real site (not a local copy) before giving students access
 - [ ] Migrations 001 to 020 ran with no errors
 - [ ] `js/config.js` has your Project URL and publishable key (no secret key anywhere)
 - [ ] Auth: Site URL and Redirect URLs match your Pages address, "Confirm email" is on
-- [ ] `create-user` function is deployed and `ALLOWED_ORIGIN` is set
+- [ ] `create-user` and `admin-set-password` functions are deployed and `ALLOWED_ORIGIN` is set
+- [ ] Admin > Users > Reset password sets a new password for a test user, and that user can sign in with it (and not with the old one)
 - [ ] Realtime is on for `messages` and `notifications` (migration 012 does this on Supabase)
 - [ ] You are an admin: `update public.profiles set role = 'admin' where email = '...'`
 
@@ -85,3 +86,11 @@ The database tests prove a locked lesson's row and attached files are hidden. Vi
 - [ ] Student presses "I've left the class": the leave is recorded
 - [ ] Student closes the whole browser while in the class: after about 2 minutes the teacher list shows them as Left
 - [ ] On a phone using the Jitsi app: the student presses "I've left the class" when finished (the app cannot be detected)
+
+## Opening splash (landing page)
+- [ ] Open the site in a fresh tab: the animated splash plays once (~3 s) and fades into the landing page.
+- [ ] Reload in the same tab: no splash. Close the tab and reopen: it plays again.
+- [ ] Tap/click, press Esc/Enter, or press Skip: it ends immediately and scrolling works.
+- [ ] With the device set to "reduce motion": no splash at all.
+- [ ] Click Sign in on the landing page: a short branded transition plays, then the login page opens.
+- [ ] Sign in successfully: "Welcome back, <first name>" with your role plays for about 2 s, then your dashboard opens. A wrong password shows the error with no animation.

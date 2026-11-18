@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/splash.css">
+  <script src="js/splash-boot.js"></script>
   <style>
     .lp-nav { display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); max-width:1080px; margin:0 auto; padding:var(--sp-4) var(--sp-4); }
     .lp-nav img { height:40px; width:auto; }
@@ -47,6 +49,17 @@
   </style>
 </head>
 <body>
+<div class="splash" id="splash" role="status" aria-label="Rinova Learn is loading">
+  <div class="splash-orb o1"></div><div class="splash-orb o2"></div><div class="splash-orb o3"></div><div class="splash-grid"></div>
+  <div class="splash-center">
+    <div class="splash-mark" aria-hidden="true"><i class="splash-pulse"></i><i class="splash-badge"></i><img src="assets/img/logo-mark.png" alt="" width="512" height="512">
+      <svg class="splash-ring" viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="46"></circle><circle class="arc" cx="50" cy="50" r="46"></circle></svg></div>
+    <div class="splash-word" aria-hidden="true"><span style="--i:0">R</span><span style="--i:1">i</span><span style="--i:2">n</span><span style="--i:3">o</span><span style="--i:4">v</span><span style="--i:5">a</span><span class="sp" style="--i:6"></span><span style="--i:7" class="g">L</span><span style="--i:8" class="g">e</span><span style="--i:9" class="g">a</span><span style="--i:10" class="g">r</span><span style="--i:11" class="g">n</span></div>
+    <p class="splash-tag">Learn without limits</p>
+  </div>
+  <div class="splash-bar" aria-hidden="true"><i></i></div>
+  <button class="splash-skip" type="button">Skip</button>
+</div>
 <noscript><p style="font-family:system-ui,sans-serif;max-width:40rem;margin:3rem auto;padding:0 1rem">Rinova Learn needs JavaScript to run. Please turn it on in your browser and reload this page.</p></noscript>
   <div class="lp-hero">
     <header class="lp-nav">
