@@ -1,13 +1,7 @@
-// Opening splash: once per browser session. The animation and its own exit are pure CSS; this only handles skipping and cleanup.
-const KEY = 'rl-splash';
-
+// Opening splash: plays on every visit. The animation and its own exit are pure CSS; this only handles skipping and cleanup.
 export function initSplash() {
   const el = document.getElementById('splash'); if (!el) return;
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  let seen = false; try { seen = !!sessionStorage.getItem(KEY); } catch { /* ignore */ }
-  const force = document.documentElement.classList.contains('force-splash');
-  if (!force && (seen || reduced)) { el.remove(); return; }
-  try { sessionStorage.setItem(KEY, '1'); } catch { /* ignore */ }
   document.documentElement.style.overflow = 'hidden';               // no scrolling behind it
   let done = false;
   const finish = () => { if (done) return; done = true; document.documentElement.style.overflow = ''; el.remove(); document.removeEventListener('keydown', onKey); };
@@ -17,5 +11,5 @@ export function initSplash() {
   el.querySelector('.splash-skip')?.addEventListener('click', (e) => { e.stopPropagation(); leave(); });
   document.addEventListener('keydown', onKey);
   el.addEventListener('animationend', (e) => { if (e.animationName === 'splash-out') finish(); });
-  setTimeout(finish, 4000);                                          // safety net
+  setTimeout(reduced ? leave : finish, reduced ? 1500 : 4000);     // calm devices get a still version for 1.5 s; safety net otherwise
 }

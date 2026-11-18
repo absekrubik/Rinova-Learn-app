@@ -89,7 +89,7 @@ The database tests prove a locked lesson's row and attached files are hidden. Vi
 
 ## Opening splash (landing page)
 - [ ] Open the site in a fresh tab: the animated splash plays once (~3 s) and fades into the landing page.
-- [ ] Reload in the same tab: no splash. Close the tab and reopen: it plays again.
+- [ ] Reload or revisit: it plays every time (with "reduce motion" on, a still version shows for ~1.5 s).
 - [ ] Tap/click, press Esc/Enter, or press Skip: it ends immediately and scrolling works.
 - [ ] With the device set to "reduce motion": no splash at all.
 - [ ] Click Sign in on the landing page: a short branded transition plays, then the login page opens.

@@ -8,7 +8,6 @@ let shown = false;
 export function playTransition({ title = '', strong = '', sub = '', ms = 900 } = {}) {
   if (shown) return Promise.resolve();
   shown = true;
-  if (reduced()) return Promise.resolve();
   const root = el('div', 'rl-trans'); root.setAttribute('role', 'status'); root.setAttribute('aria-live', 'polite');
   root.append(el('i', 'orb'), el('i', 'orb b'));
   const inner = el('div', 'rl-trans-in');
@@ -22,7 +21,7 @@ export function playTransition({ title = '', strong = '', sub = '', ms = 900 } =
   if (sub) inner.append(el('p', '', sub));
   const dots = el('div', 'dots'); dots.setAttribute('aria-hidden', 'true'); dots.append(el('i'), el('i'), el('i')); inner.append(dots);
   root.append(inner); document.body.append(root);
-  return new Promise((r) => setTimeout(r, ms));
+  return new Promise((r) => setTimeout(r, reduced() ? Math.min(ms, 700) : ms));
 }
 
 // Coming back with the browser Back button (page restored from cache): clear the overlay so the page is usable.
