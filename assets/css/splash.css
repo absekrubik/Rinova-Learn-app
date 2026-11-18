@@ -48,11 +48,7 @@
 @keyframes orb-drift { from { translate: 0 0; } to { translate: 3vmax -2vmax; } }
 @keyframes grid-in { from { opacity: 0; } to { opacity: .08; } }
 
-/* Devices set to "reduce motion" still see the branding, but as a still image for a moment (no movement). */
-@media (prefers-reduced-motion: reduce) {
-  .splash *, .splash-center * { animation: none !important; opacity: 1 !important; transform: none !important; translate: none !important; stroke-dashoffset: 0 !important; }
-  .splash { animation: splash-out .3s linear 1.5s forwards !important; }
-  .splash-orb, .splash-grid { opacity: .6 !important; }
-  .splash-pulse { opacity: 0 !important; }
-  .splash-bar i { transform: scaleX(1) !important; }
-}
+
+/* Cover shown from the first paint until the splash element exists (or for 1.5 s at most, if scripts fail). */
+html.has-splash:not(.splash-on) body::before { content: ""; position: fixed; inset: 0; z-index: 999; background: #0B3C95; animation: cover-out .2s linear 1.5s forwards; }
+@keyframes cover-out { to { opacity: 0; visibility: hidden; } }

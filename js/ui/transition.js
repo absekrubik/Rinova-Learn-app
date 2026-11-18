@@ -1,7 +1,6 @@
 // Branded full-screen transition. Resolves when it is time to navigate; the page unloads right after, so the overlay is never removed.
 const LOGO = new URL('../../assets/img/logo-mark.png', import.meta.url).href;
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
-const reduced = () => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 let shown = false;
 
 /** playTransition({ title, strong, sub, ms }) -> Promise. `strong` is the highlighted part of the title (e.g. a first name). */
@@ -21,7 +20,7 @@ export function playTransition({ title = '', strong = '', sub = '', ms = 900 } =
   if (sub) inner.append(el('p', '', sub));
   const dots = el('div', 'dots'); dots.setAttribute('aria-hidden', 'true'); dots.append(el('i'), el('i'), el('i')); inner.append(dots);
   root.append(inner); document.body.append(root);
-  return new Promise((r) => setTimeout(r, reduced() ? Math.min(ms, 700) : ms));
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 // Coming back with the browser Back button (page restored from cache): clear the overlay so the page is usable.

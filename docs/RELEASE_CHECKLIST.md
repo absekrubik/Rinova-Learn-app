@@ -94,3 +94,4 @@ The database tests prove a locked lesson's row and attached files are hidden. Vi
 - [ ] With the device set to "reduce motion": no splash at all.
 - [ ] Click Sign in on the landing page: a short branded transition plays, then the login page opens.
 - [ ] Sign in successfully: "Welcome back, <first name>" with your role plays for about 2 s, then your dashboard opens. A wrong password shows the error with no animation.
+- [ ] The same splash plays on the login page and on the admin, teacher and student dashboards (every visit). Right after signing in, the "Welcome back" animation is followed by the dashboard with no second splash.

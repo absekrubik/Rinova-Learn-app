@@ -147,7 +147,9 @@
 .skip-link:focus { top: var(--sp-3); }
 #page:focus { outline: none; }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  /* everything calms down except the brand splash/transitions, which are short and always play */
+  *:not(.splash):not(.splash *):not(.rl-trans):not(.rl-trans *), *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  .splash::before, .splash::after, .splash *::before, .splash *::after, .rl-trans *::before, .rl-trans *::after { animation-duration: revert !important; animation-iteration-count: revert !important; }
 }
 @media print { .sidebar, .topbar, .skip-link, .toast-region { display: none !important; } .app { display: block; } }
 

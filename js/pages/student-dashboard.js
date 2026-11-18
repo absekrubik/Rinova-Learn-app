@@ -1,5 +1,7 @@
+import { showSplash } from '../ui/splash.js';
 import { mountShell } from '../ui/shell.js';
 import { layout, loadStats, loadLive, loadNews } from './dashboard-common.js';
+showSplash();
 
 const { me, content } = await mountShell({ roles: ['student'], active: 'student/index.html', title: 'Dashboard' });
 const el = layout(content, { me, subtitle: 'Here is what is happening in your courses.' });

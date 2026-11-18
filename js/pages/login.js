@@ -1,9 +1,11 @@
+import { showSplash } from '../ui/splash.js';
 import { signIn, getProfile, roleHomeUrl } from '../core/auth.js';
 import { redirectIfSignedIn } from '../core/guard.js';
 import { SITE_ROOT, param, html } from '../core/utils.js';
 import { formData, setFieldError, clearErrors, withBusy, isEmail } from '../ui/form.js';
 import { requireClient } from '../core/supabase.js';
 import { playTransition } from '../ui/transition.js';
+showSplash();
 const ROLE_LABEL = { admin: 'Administrator', teacher: 'Teacher', student: 'Student' };
 
 const form = document.getElementById('form'), notice = document.getElementById('notice');
@@ -36,6 +38,7 @@ form.addEventListener('submit', async (e) => {
       const first = String(me.full_name ?? '').trim().split(/\s+/)[0];
       const target = (next && next.startsWith(SITE_ROOT.origin + SITE_ROOT.pathname + me.role)) ? next : roleHomeUrl(me.role);
       await playTransition({ title: first ? 'Welcome back, ' : 'Welcome back', strong: first, sub: ROLE_LABEL[me.role] ?? '', ms: 1700 });
+      try { sessionStorage.setItem('rl-skip-splash', '1'); } catch { /* ignore */ }
       location.href = target;
     } catch (err) { say('error', FRIENDLY[err.message] ?? err.message); }
   });

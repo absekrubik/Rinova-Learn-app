@@ -1,9 +1,11 @@
+import { showSplash } from '../ui/splash.js';
 import { mountShell } from '../ui/shell.js';
 import { html, raw, url } from '../core/utils.js';
 import { renderAsync } from '../ui/states.js';
 import * as ew from '../services/earlyWarning.js';
 import * as lq from '../services/lessonQuestions.js';
 import { layout, loadStats, loadLive, loadNews } from './dashboard-common.js';
+showSplash();
 
 const { me, content } = await mountShell({ roles: ['teacher'], active: 'teacher/index.html', title: 'Dashboard' });
 const el = layout(content, { me, subtitle: 'Your classes and what needs your attention.' });

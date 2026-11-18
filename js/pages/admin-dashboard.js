@@ -1,8 +1,10 @@
+import { showSplash } from '../ui/splash.js';
 import { mountShell } from '../ui/shell.js';
 import { html, raw, formatDate } from '../core/utils.js';
 import { renderAsync } from '../ui/states.js';
 import { newest } from '../services/profiles.js';
 import { layout, loadStats, loadLive, loadNews } from './dashboard-common.js';
+showSplash();
 
 const { me, content } = await mountShell({ roles: ['admin'], active: 'admin/index.html', title: 'Dashboard' });
 const el = layout(content, { me, subtitle: 'Platform overview.', statCount: 4 });
