@@ -49,7 +49,7 @@
 @keyframes grid-in { from { opacity: 0; } to { opacity: .08; } }
 
 /* people who ask their device for less motion get no splash at all */
-@media (prefers-reduced-motion: reduce) { .splash { display: none; } }
+@media (prefers-reduced-motion: reduce) { html:not(.force-splash) .splash { display: none; } }
 
 /* Short transitions: leaving the landing page for Sign in, and the welcome after a successful sign-in. */
 .rl-trans { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; color: #fff; text-align: center; padding: 1rem;

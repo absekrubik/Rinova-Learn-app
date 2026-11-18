@@ -5,7 +5,8 @@ export function initSplash() {
   const el = document.getElementById('splash'); if (!el) return;
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   let seen = false; try { seen = !!sessionStorage.getItem(KEY); } catch { /* ignore */ }
-  if (seen || reduced) { el.remove(); return; }
+  const force = document.documentElement.classList.contains('force-splash');
+  if (!force && (seen || reduced)) { el.remove(); return; }
   try { sessionStorage.setItem(KEY, '1'); } catch { /* ignore */ }
   document.documentElement.style.overflow = 'hidden';               // no scrolling behind it
   let done = false;
